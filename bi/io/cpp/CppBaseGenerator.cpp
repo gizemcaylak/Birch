@@ -324,6 +324,7 @@ void bi::CppBaseGenerator::visit(const MemberVariable* o) {
 
 void bi::CppBaseGenerator::visit(const Function* o) {
   if (!o->braces->isEmpty()) {
+    line("#pragma omp declare target");
     if (o->isGeneric()) {
       /* generic functions are generated as a struct with a static member
        * function, where the type parameters are part of the struct; this means
@@ -377,9 +378,11 @@ void bi::CppBaseGenerator::visit(const Function* o) {
       CppBaseGenerator aux(base, level, false);
       *this << o->braces->strip();
       out();
-      line("}\n");
+      line('}');
     }
+    line("#pragma omp end declare target\n");
   }
+
   for (auto instantiation : o->instantiations) {
     *this << instantiation;
   }

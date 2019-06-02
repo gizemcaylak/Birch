@@ -981,8 +981,8 @@ void bi::Driver::configure() {
       cxxflags << " -Og -g";
     } else {
       cppflags << " -DNDEBUG";
-      cflags << " -O3 -flto -g";
-      cxxflags << " -O3 -flto -g";
+      cflags << " -O3 -g";
+      cxxflags << " -O3 -g";
     }
 
     /* defines */
