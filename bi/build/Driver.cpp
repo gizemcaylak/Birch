@@ -29,6 +29,7 @@ bi::Driver::Driver(int argc, char** argv) :
     staticLib(false),
     sharedLib(true),
     openmp(true),
+    device(false),
     warnings(true),
     debug(true),
     verbose(true),
@@ -54,6 +55,8 @@ bi::Driver::Driver(int argc, char** argv) :
     DISABLE_SHARED_ARG,
     ENABLE_OPENMP_ARG,
     DISABLE_OPENMP_ARG,
+    ENABLE_DEVICE_ARG,
+    DISABLE_DEVICE_ARG,
     ENABLE_WARNINGS_ARG,
     DISABLE_WARNINGS_ARG,
     ENABLE_DEBUG_ARG,
@@ -84,6 +87,8 @@ bi::Driver::Driver(int argc, char** argv) :
       { "disable-shared", no_argument, 0, DISABLE_SHARED_ARG },
       { "enable-openmp", no_argument, 0, ENABLE_OPENMP_ARG },
       { "disable-openmp", no_argument, 0, DISABLE_OPENMP_ARG },
+      { "enable-device", no_argument, 0, ENABLE_DEVICE_ARG },
+      { "disable-device", no_argument, 0, DISABLE_DEVICE_ARG },
       { "enable-warnings", no_argument, 0, ENABLE_WARNINGS_ARG },
       { "disable-warnings", no_argument, 0, DISABLE_WARNINGS_ARG },
       { "enable-debug", no_argument, 0, ENABLE_DEBUG_ARG },
@@ -152,6 +157,12 @@ bi::Driver::Driver(int argc, char** argv) :
       break;
     case DISABLE_OPENMP_ARG:
       openmp = false;
+      break;
+    case ENABLE_DEVICE_ARG:
+      device = true;
+      break;
+    case DISABLE_DEVICE_ARG:
+      device = false;
       break;
     case ENABLE_WARNINGS_ARG:
       warnings = true;
@@ -974,11 +985,8 @@ void bi::Driver::configure() {
       cxxflags << " -Wall";
     }
     if (debug) {
-      //@todo Consider a development build with these settings
-      //cflags << " -O0 -fno-inline -g";
-      //cxxflags << " -O0 -fno-inline -g";
-      cflags << " -Og -g";
-      cxxflags << " -Og -g";
+      cflags << " -Og -fno-inline -g";
+      cxxflags << " -Og -fno-inline -g";
     } else {
       cppflags << " -DNDEBUG";
       cflags << " -O3 -g";
@@ -986,6 +994,11 @@ void bi::Driver::configure() {
     }
 
     /* defines */
+    if (device) {
+      cppflags << " -DENABLE_DEVICE=1";
+    } else {
+      cppflags << " -DENABLE_DEVICE=0";
+    }
     if (memoryPool) {
       cppflags << " -DENABLE_MEMORY_POOL=1";
     } else {

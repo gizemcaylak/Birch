@@ -209,6 +209,11 @@ private:
   bool openmp;
 
   /**
+   * Is device (GPU) code enabled?
+   */
+  bool device;
+
+  /**
    * Are compiler warnings enabled?
    */
   bool warnings;

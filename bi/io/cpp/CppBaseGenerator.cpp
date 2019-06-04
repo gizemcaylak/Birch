@@ -294,6 +294,7 @@ void bi::CppBaseGenerator::visit(const GlobalVariable* o) {
   /* C++ does not guarantee static initialization order across compilation
    * units. Global variables are therefore used through accessor functions
    * that initialize their values on first use. */
+  line("#pragma omp declare target");
   start(o->type << "& ");
   if (!header) {
     middle("bi::");
@@ -311,6 +312,7 @@ void bi::CppBaseGenerator::visit(const GlobalVariable* o) {
     out();
     line("}\n");
   }
+  line("#pragma omp end declare target\n");
 }
 
 void bi::CppBaseGenerator::visit(const LocalVariable* o) {
@@ -637,11 +639,11 @@ void bi::CppBaseGenerator::visit(const For* o) {
 
   /* handle parallel for loop */
   if (o->has(PARALLEL)) {
-    line("#pragma omp parallel");
-    line("{");
-    in();
-    genTraceFunction("<thread start>", o->loc);
-    line("#pragma omp for schedule(static)");
+    line("#if ENABLE_DEVICE");
+    line("#pragma omp target teams distribute dist_schedule(static) parallel for schedule(static)");
+    line("#else");
+    line("#pragma omp parallel for schedule(static)");
+    line("#endif");
   }
 
   /* o->index may be an identifier or a local variable, in the latter case
