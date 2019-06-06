@@ -294,7 +294,9 @@ void bi::CppBaseGenerator::visit(const GlobalVariable* o) {
   /* C++ does not guarantee static initialization order across compilation
    * units. Global variables are therefore used through accessor functions
    * that initialize their values on first use. */
+  line("#if ENABLE_DEVICE");
   line("#pragma omp declare target");
+  line("#endif");
   start(o->type << "& ");
   if (!header) {
     middle("bi::");
@@ -312,7 +314,9 @@ void bi::CppBaseGenerator::visit(const GlobalVariable* o) {
     out();
     line("}\n");
   }
-  line("#pragma omp end declare target\n");
+  line("#if ENABLE_DEVICE");
+  line("#pragma omp end declare target");
+  line("#endif\n");
 }
 
 void bi::CppBaseGenerator::visit(const LocalVariable* o) {
@@ -326,7 +330,9 @@ void bi::CppBaseGenerator::visit(const MemberVariable* o) {
 
 void bi::CppBaseGenerator::visit(const Function* o) {
   if (!o->braces->isEmpty()) {
+    line("#if ENABLE_DEVICE");
     line("#pragma omp declare target");
+    line("#endif");
     if (o->isGeneric()) {
       /* generic functions are generated as a struct with a static member
        * function, where the type parameters are part of the struct; this means
@@ -360,6 +366,9 @@ void bi::CppBaseGenerator::visit(const Function* o) {
       if (header) {
         out();
         finish("};\n");
+        line("#if ENABLE_DEVICE");
+        line("#pragma omp end declare target");
+        line("#endif\n");
       }
     } else {
       start(o->returnType << ' ');
@@ -369,6 +378,9 @@ void bi::CppBaseGenerator::visit(const Function* o) {
       middle(o->name << '(' << o->params << ')');
       if (header) {
         finish(';');
+        line("#if ENABLE_DEVICE");
+        line("#pragma omp end declare target");
+        line("#endif\n");
       }
     }
 
@@ -381,8 +393,10 @@ void bi::CppBaseGenerator::visit(const Function* o) {
       *this << o->braces->strip();
       out();
       line('}');
+      line("#if ENABLE_DEVICE");
+      line("#pragma omp end declare target");
+      line("#endif\n");
     }
-    line("#pragma omp end declare target\n");
   }
 
   for (auto instantiation : o->instantiations) {
