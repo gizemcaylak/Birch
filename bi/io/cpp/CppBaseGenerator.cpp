@@ -330,14 +330,14 @@ void bi::CppBaseGenerator::visit(const MemberVariable* o) {
 
 void bi::CppBaseGenerator::visit(const Function* o) {
   if (!o->braces->isEmpty()) {
-    line("#if ENABLE_DEVICE");
-    line("#pragma omp declare target");
-    line("#endif");
     if (o->isGeneric()) {
       /* generic functions are generated as a struct with a static member
        * function, where the type parameters are part of the struct; this means
        * we don't have to generate even a signature for the unbound function */
       if (header) {
+        line("#if ENABLE_DEVICE");
+        line("#pragma omp declare target");
+        line("#endif");
         genTemplateParams(o);
         start("struct " << o->name);
         if (o->isBound()) {
@@ -352,6 +352,11 @@ void bi::CppBaseGenerator::visit(const Function* o) {
         }
       }
       if (o->isBound()) {
+        if (!header) {
+          line("#if ENABLE_DEVICE");
+          line("#pragma omp declare target");
+          line("#endif");
+        }
         middle(o->returnType << ' ');
         if (!header) {
           start("bi::" << o->name);
@@ -371,6 +376,9 @@ void bi::CppBaseGenerator::visit(const Function* o) {
         line("#endif\n");
       }
     } else {
+      line("#if ENABLE_DEVICE");
+      line("#pragma omp declare target");
+      line("#endif");
       start(o->returnType << ' ');
       if (!header) {
         middle("bi::");
