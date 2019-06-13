@@ -27,6 +27,9 @@ void bi::CppClassGenerator::visit(const Class* o) {
     /* start boilerplate */
     if (header) {
       if (!o->isAlias()) {
+        line("#if ENABLE_DEVICE");
+        line("#pragma omp declare target");
+        line("#endif");
         genTemplateParams(o);
         start("class " << o->name);
         if (o->isGeneric() && o->isBound()) {
@@ -223,6 +226,9 @@ void bi::CppClassGenerator::visit(const Class* o) {
     if (!o->isAlias() && header) {
       out();
       line("};\n");
+      line("#if ENABLE_DEVICE");
+      line("#pragma omp end declare target");
+      line("#endif");
     }
 
     /* C linkage function */
