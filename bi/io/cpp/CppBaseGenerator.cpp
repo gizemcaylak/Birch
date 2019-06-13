@@ -662,14 +662,10 @@ void bi::CppBaseGenerator::visit(const For* o) {
   /* handle parallel for loop */
   if (o->has(PARALLEL)) {
     line("#if ENABLE_DEVICE");
-    line("#pragma omp target teams distribute parallel dist_schedule(static)");
+    line("#pragma omp target teams distribute parallel for dist_schedule(static) schedule(static)");
     line("#else");
-    line("#pragma omp parallel");
+    line("#pragma omp parallel for schedule(static)");
     line("#endif");
-    line("{");
-    in();
-    genTraceFunction("<thread start>", o->loc);
-    line("#pragma omp for schedule(static)");
   }
 
   /* o->index may be an identifier or a local variable, in the latter case
@@ -690,11 +686,6 @@ void bi::CppBaseGenerator::visit(const For* o) {
   *this << o->braces->strip();
   out();
   line("}");
-
-  if (o->has(PARALLEL)) {
-    out();
-    line("}");
-  }
 }
 
 void bi::CppBaseGenerator::visit(const While* o) {
