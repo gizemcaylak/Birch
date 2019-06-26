@@ -660,11 +660,15 @@ void bi::CppBaseGenerator::visit(const For* o) {
   genTraceLine(o->loc->firstLine);
 
   /* handle parallel for loop */
+  std::string schedule("static");
+  if (o->has(DYNAMIC)) {
+    schedule = "guided";
+  }
   if (o->has(PARALLEL)) {
     line("#if ENABLE_DEVICE");
-    line("#pragma omp target teams distribute parallel for dist_schedule(static) schedule(static)");
+    line("#pragma omp target teams distribute parallel for dist_schedule(" << schedule << ") schedule(" << schedule << ")");
     line("#else");
-    line("#pragma omp parallel for schedule(static)");
+    line("#pragma omp parallel for schedule(" << schedule << ")");
     line("#endif");
   }
 
