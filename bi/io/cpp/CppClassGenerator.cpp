@@ -175,6 +175,7 @@ void bi::CppClassGenerator::visit(const Class* o) {
       }
 
       /* freeze function */
+      line("#if ENABLE_LAZY_DEEP_CLONE");
       if (header) {
         start("virtual void ");
       } else {
@@ -215,7 +216,33 @@ void bi::CppClassGenerator::visit(const Class* o) {
           line("libbirch::finish(" << o->name << ");");
         }
         out();
-        line("}\n");
+        line("}");
+      }
+      line("#endif\n");
+
+      /* setters for member variables */
+      if (header) {
+        Gatherer<MemberVariable> memberVars;
+        o->accept(&memberVars);
+        for (auto var : memberVars) {
+          line("template<class T_>");
+          line("auto& set_" << var->name << "_(const T_& o_) {");
+          in();
+          line("libbirch_swap_context_");
+          line("return " << var->name << " = " << "o_;");
+          out();
+          line("}\n");
+
+          if (var->type->isArray()) {
+            line("template<class F_, class T_>");
+            line("auto set_" << var->name << "_(const F_& frame_, const T_& o_) {");
+            in();
+            line("libbirch_swap_context_");
+            line("return " << var->name << "(frame_) = " << "o_;");
+            out();
+            line("}\n");
+          }
+        }
       }
 
       /* member variables and functions */
@@ -273,8 +300,20 @@ void bi::CppClassGenerator::visit(const MemberFunction* o) {
     finish(" {");
     in();
     genTraceFunction(o->name->str(), o->loc);
-    line("libbirch_swap_context_");
-    line("libbirch_declare_self_");
+
+	  /* declare self and swap in context if necessary */
+    Gatherer<Member> members;
+    Gatherer<Raw> raws;
+    Gatherer<This> selfs;
+    Gatherer<Super> supers;
+    o->accept(&members);
+    o->accept(&raws);
+    o->accept(&selfs);
+    o->accept(&supers);
+    if (members.size() + raws.size() + selfs.size() + supers.size() > 0) {
+      line("libbirch_swap_context_");
+      line("libbirch_declare_self_");
+    }
 
     /* body */
     CppBaseGenerator auxBase(base, level, header);

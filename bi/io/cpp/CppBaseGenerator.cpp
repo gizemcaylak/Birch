@@ -116,10 +116,40 @@ void bi::CppBaseGenerator::visit(const UnaryCall* o) {
 }
 
 void bi::CppBaseGenerator::visit(const Assign* o) {
-  ++inAssign;
-  middle(o->left);
-  --inAssign;
-  middle(" = " << o->right);
+  /* determine whether this is setting a member variable outside of the
+   * current class */
+  auto member = dynamic_cast<const Member*>(o->left);
+  auto slice = dynamic_cast<const Slice*>(o->left);
+  const This* self = nullptr;
+  const Super* super = nullptr;
+  const Identifier<MemberVariable>* var = nullptr;
+
+  if (slice) {
+    member = dynamic_cast<const Member*>(slice->single);
+  }
+  if (member) {
+    self = dynamic_cast<decltype(self)>(member->left);
+    super = dynamic_cast<decltype(super)>(member->left);
+    var = dynamic_cast<decltype(var)>(member->right);
+  }
+
+  if (var && !self && !super) {
+    /* this assignment is setting a member variable outside of the current
+     * class, use the setter member function of the class to ensure the
+     * context is set correctly */
+    ++inAssign;
+    middle(member->left << "->set_" << var->name << "_(");
+    if (slice) {
+      middle("libbirch::make_view(" << slice->brackets << "), ");
+    }
+    --inAssign;
+    middle(o->right << ')');
+  } else {
+    ++inAssign;
+    middle(o->left);
+    --inAssign;
+    middle(" = " << o->right);
+  }
 }
 
 void bi::CppBaseGenerator::visit(const Slice* o) {
@@ -192,7 +222,7 @@ void bi::CppBaseGenerator::visit(const Member* o) {
     if (!inAssign && rightVar && rightVar->type->isValue()) {
       /* optimization: just reading a value, so no need to copy-on-write the
        * owning object */
-      middle(".pull()");
+      middle(".readOnly()");
     }
     middle("->");
 
@@ -675,6 +705,7 @@ void bi::CppBaseGenerator::visit(const For* o) {
   /* o->index may be an identifier or a local variable, in the latter case
    * need to ensure that it is only declared once in the first element of the
    * for loop */
+  ++inAssign;
   auto param = dynamic_cast<LocalVariable*>(o->index);
   if (param) {
     Identifier<LocalVariable> ref(param->name, param->loc, param);
@@ -686,6 +717,7 @@ void bi::CppBaseGenerator::visit(const For* o) {
     middle(o->index << " <= " << o->to << "; ");
     finish("++" << o->index << ") {");
   }
+  --inAssign;
   in();
   *this << o->braces->strip();
   out();
@@ -866,7 +898,9 @@ void bi::CppBaseGenerator::genArg(const Expression* arg, const Type* type) {
   /* Birch and C++ resolve overloads differently, explicit casting avoids
    * situations where Birch considers a call unambiguous, whereas C++ does
    * not */
-  if (!arg->type->equals(*type)) {
+  auto isThis = dynamic_cast<const This*>(arg);
+  auto isSuper = dynamic_cast<const Super*>(arg);
+  if (!arg->type->equals(*type) || isThis || isSuper) {
     middle(type->canonical() << '(' << arg << ')');
   } else {
     middle(arg);
