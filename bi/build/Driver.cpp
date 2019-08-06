@@ -1190,6 +1190,7 @@ std::string bi::Driver::suffix() const {
   buf << staticLib << ' ';
   buf << sharedLib << ' ';
   buf << openmp << ' ';
+  buf << device << ' ';
   buf << debug << ' ';
   buf << memoryPool << ' ';
   buf << lazyDeepClone << ' ';
