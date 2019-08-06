@@ -61,7 +61,7 @@ void bi::CppBaseGenerator::visit(const Parentheses* o) {
 
 void bi::CppBaseGenerator::visit(const Sequence* o) {
   if (o->single->isEmpty()) {
-    middle("libbirch::nil");
+    middle("libbirch::Nil()");
   } else {
     middle("{ " << o->single << " }");
   }
@@ -248,7 +248,7 @@ void bi::CppBaseGenerator::visit(const Global* o) {
 }
 
 void bi::CppBaseGenerator::visit(const Nil* o) {
-  middle("libbirch::nil");
+  middle("libbirch::Nil()");
 }
 
 void bi::CppBaseGenerator::visit(const Parameter* o) {
@@ -690,15 +690,17 @@ void bi::CppBaseGenerator::visit(const For* o) {
   genTraceLine(o->loc->firstLine);
 
   /* handle parallel for loop */
-  std::string schedule("static");
-  if (o->has(DYNAMIC)) {
-    schedule = "guided";
-  }
   if (o->has(PARALLEL)) {
     line("#if ENABLE_DEVICE");
-    line("#pragma omp target teams distribute parallel for dist_schedule(" << schedule << ") schedule(" << schedule << ")");
+    line("#pragma omp target teams distribute parallel for dist_schedule(static) schedule(static)");
     line("#else");
-    line("#pragma omp parallel for schedule(" << schedule << ")");
+    start("#pragma omp parallel for schedule(");
+    if (o->has(DYNAMIC)) {
+      middle("guided");
+    } else {
+      middle("static");
+    }
+    finish(')');
     line("#endif");
   }
 

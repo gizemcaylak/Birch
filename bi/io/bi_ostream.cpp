@@ -158,7 +158,7 @@ void bi::bi_ostream::visit(const This* o) {
 }
 
 void bi::bi_ostream::visit(const Nil* o) {
-  middle("nil");
+  middle("libbirch::Nil()");
 }
 
 void bi::bi_ostream::visit(const LocalVariable* o) {
