@@ -151,22 +151,22 @@ private:
   /**
    * Working directory.
    */
-  fs::path work_dir;
+  std::filesystem::path work_dir;
 
   /**
    * Share directories.
    */
-  std::list<fs::path> share_dirs;
+  std::list<std::filesystem::path> share_dirs;
 
   /**
    * Include directories.
    */
-  std::list<fs::path> include_dirs;
+  std::list<std::filesystem::path> include_dirs;
 
   /**
    * Library directories.
    */
-  std::list<fs::path> lib_dirs;
+  std::list<std::filesystem::path> lib_dirs;
 
   /**
    * Target architecture.
@@ -273,8 +273,8 @@ private:
   /**
    * Lists of files from meta.
    */
-  std::map<std::string,std::list<fs::path>> metaFiles;
-  std::set<fs::path> allFiles;
+  std::map<std::string,std::list<std::filesystem::path>> metaFiles;
+  std::set<std::filesystem::path> allFiles;
 
   /**
    * Leftover command-line arguments for program calls.

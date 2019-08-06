@@ -83,7 +83,7 @@ void bi::CppPackageGenerator::visit(const Package* o) {
     line("");
 
     for (auto header : o->headers) {
-      fs::path include = header->path;
+      std::filesystem::path include = header->path;
       include.replace_extension(".hpp");
       line("#include \"" << include.string() << "\"");
     }

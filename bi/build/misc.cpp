@@ -3,14 +3,13 @@
  */
 #include "bi/build/misc.hpp"
 
-#include "boost/filesystem/fstream.hpp"
 #include "boost/algorithm/string.hpp"
 
 void bi::warn(const std::string& msg) {
   std::cerr << "warning: " << msg << std::endl;
 }
 
-fs::path bi::find(const std::list<fs::path>& paths, const fs::path path) {
+std::filesystem::path bi::find(const std::list<std::filesystem::path>& paths, const std::filesystem::path path) {
   auto iter = paths.begin();
   while (iter != paths.end() && !exists(*iter / path)) {
     ++iter;
@@ -22,8 +21,8 @@ fs::path bi::find(const std::list<fs::path>& paths, const fs::path path) {
   }
 }
 
-bool bi::copy_if_newer(fs::path src, fs::path dst) {
-  using namespace fs;
+bool bi::copy_if_newer(std::filesystem::path src, std::filesystem::path dst) {
+  using namespace std::filesystem;
 
   /* copy_file(src, dst, copy_option::overwrite_if_exists) seems problematic,
    * workaround... */
@@ -39,8 +38,8 @@ bool bi::copy_if_newer(fs::path src, fs::path dst) {
   return result;
 }
 
-bool bi::copy_with_prompt(fs::path src, fs::path dst) {
-  using namespace fs;
+bool bi::copy_with_prompt(std::filesystem::path src, std::filesystem::path dst) {
+  using namespace std::filesystem;
 
   bool result = false;
   std::string ans;
@@ -60,8 +59,8 @@ bool bi::copy_with_prompt(fs::path src, fs::path dst) {
   return result;
 }
 
-void bi::copy_with_force(fs::path src, fs::path dst) {
-  using namespace fs;
+void bi::copy_with_force(std::filesystem::path src, std::filesystem::path dst) {
+  using namespace std::filesystem;
 
   if (exists(dst)) {
     remove(dst);
@@ -71,16 +70,16 @@ void bi::copy_with_force(fs::path src, fs::path dst) {
   }
 }
 
-fs::path bi::remove_first(const fs::path& path) {
+std::filesystem::path bi::remove_first(const std::filesystem::path& path) {
   auto parent = path.parent_path();
   if (parent == path || parent.string().compare(".") == 0) {
-    return fs::path() / path.filename();
+    return std::filesystem::path() / path.filename();
   } else {
     return remove_first(path.parent_path()) / path.filename();
   }
 }
 
-fs::path bi::remove_common_prefix(const fs::path& base, const fs::path& path) {
+std::filesystem::path bi::remove_common_prefix(const std::filesystem::path& base, const std::filesystem::path& path) {
   auto iter1 = base.begin();
   auto end1 = base.end();
   auto iter2 = path.begin();
@@ -98,29 +97,29 @@ fs::path bi::remove_common_prefix(const fs::path& base, const fs::path& path) {
     }
     return result;
   } else {
-    return fs::path();
+    return std::filesystem::path();
   }
 }
 
-std::string bi::read_all(const fs::path& path) {
-  fs::ifstream in(path);
+std::string bi::read_all(const std::filesystem::path& path) {
+  std::ifstream in(path);
   std::stringstream buf;
   buf << in.rdbuf();
   return buf.str();
 }
 
-void bi::write_all(const fs::path& path, const std::string& contents) {
+void bi::write_all(const std::filesystem::path& path, const std::string& contents) {
   if (!path.parent_path().empty()) {
-    fs::create_directories(path.parent_path());
+    std::filesystem::create_directories(path.parent_path());
   }
-  fs::ofstream out(path);
+  std::ofstream out(path);
   std::stringstream buf(contents);
   out << buf.rdbuf();
 }
 
-bool bi::write_all_if_different(const fs::path& path,
+bool bi::write_all_if_different(const std::filesystem::path& path,
     const std::string& contents) {
-  if (fs::exists(path)) {
+  if (std::filesystem::exists(path)) {
     std::string old = read_all(path);
     if (contents != old) {
       write_all(path, contents);

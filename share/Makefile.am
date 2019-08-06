@@ -14,13 +14,13 @@ birch_html_SOURCES = main.cpp
 birch_html_LDFLAGS = -s MAIN_MODULE=1 --emrun
 
 # compile and link flags
-CUDA_CXXFLAGS = -fopenmp-targets=nvptx64-nvidia-cuda --cuda-gpu-arch=sm_70 -nocudalib -stdlib=libc++
+CUDA_CXXFLAGS = -fopenmp-targets=nvptx64-nvidia-cuda -Xopenmp-target -march=sm_70
 
 AM_CPPFLAGS = -DEIGEN_NO_STATIC_ASSERT -DEIGEN_NO_AUTOMATIC_RESIZING=1 -DEIGEN_DONT_PARALLELIZE=1 -DEIGEN_NO_CPUID=1 -DEIGEN_DONT_VECTORIZE=1
 # -Deigen_assert=bi_assert
 AM_CXXFLAGS = -include bi/PACKAGE_TARNAME.hpp $(OPENMP_CXXFLAGS) $(CUDA_CXXFLAGS) -Wno-unknown-warning-option -Wno-overloaded-virtual -Wno-inconsistent-missing-override -Wno-return-type -Wno-defaulted-function-deleted
 AM_CFLAGS = $(OPENMP_CFLAGS)
-AM_LDFLAGS = -stdlib=libc++
+AM_LDFLAGS =
 
 BUILT_SOURCES = main.cpp
 CLEANFILES = main.cpp

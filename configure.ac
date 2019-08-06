@@ -18,14 +18,12 @@ if test "x$YACC" = "xyacc"; then
 fi
 
 # Checks for basic things
-AX_CXX_COMPILE_STDCXX(14, [noext], [mandatory])
+AX_CXX_COMPILE_STDCXX(17, [noext], [mandatory])
 AC_HEADER_ASSERT
 AC_HEADER_STDBOOL
 
 # Checks for headers
 AC_CHECK_HEADERS([ \
-    boost/filesystem.hpp \
-    boost/filesystem/fstream.hpp \
     boost/property_tree/ptree.hpp \
     boost/property_tree/json_parser.hpp \
     boost/algorithm/string.hpp \
@@ -35,8 +33,6 @@ AC_CHECK_HEADERS([libexplain/system.h])
 # Checks for libraries
 AC_SEARCH_LIBS([dlopen], [dl], [], [])
 AC_CHECK_LIB([explain], [explain_system])
-AC_CHECK_LIB([boost_filesystem], [main], [], [AC_CHECK_LIB([boost_filesystem-mt], [main], [], [AC_MSG_ERROR([Boost.FileSystem library not found])])])
-AC_CHECK_LIB([boost_system], [main], [], [AC_CHECK_LIB([boost_system-mt], [main], [], [AC_MSG_ERROR([Boost.System library not found])])])
 
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT

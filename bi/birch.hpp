@@ -17,21 +17,13 @@
 #include <functional>
 #include <regex>
 #include <thread>
+#include <filesystem>
 
 #include <cstdio>
 #include <cstdlib>
 #include <cstddef>
 #include <cstring>
 #include <cassert>
-
-#if __cplusplus > 201402L
-#include <filesystem>
-namespace fs = std::filesystem;
-#else
-#include "boost/filesystem.hpp"
-#include "boost/filesystem/fstream.hpp"
-namespace fs = boost::filesystem;
-#endif
 
 #undef line // line() macro in indentable_iostream clashes with property_tree
 #include "boost/property_tree/ptree.hpp"

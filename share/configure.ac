@@ -14,12 +14,11 @@ AC_CHECK_DEFINE(__EMSCRIPTEN__, emscripten=true, emscripten=false)
 if test x$emscripten = xtrue; then
   AC_ENABLE_STATIC
   AC_DISABLE_SHARED
-  AX_CXX_COMPILE_STDCXX(17, [noext], [mandatory])
 else
   AC_DISABLE_STATIC
   AC_ENABLE_SHARED
-  AX_CXX_COMPILE_STDCXX(14, [noext], [mandatory])
 fi
+AX_CXX_COMPILE_STDCXX(17, [noext], [mandatory])
 LT_INIT([dlopen,pic-only])
 
 # Checks for basic things
@@ -32,10 +31,7 @@ AC_OPENMP
 # compilation
 if test x$emscripten = xfalse; then  
   AC_SEARCH_LIBS([dlopen], [dl], [], [])
-  AC_CHECK_LIB([atomic], [main], [], [], [])
   AC_CHECK_LIB([omp], [main], [], [], [])
-  AC_CHECK_LIB([boost_filesystem], [main], [], [AC_CHECK_LIB([boost_filesystem-mt], [main], [], [AC_MSG_ERROR([Boost.FileSystem library not found])])])
-  AC_CHECK_LIB([boost_system], [main], [], [AC_CHECK_LIB([boost_system-mt], [main], [], [AC_MSG_ERROR([Boost.System library not found])])])
 
   # Checks for headers
   if test xPACKAGE_TARNAME != xbirch_standard; then

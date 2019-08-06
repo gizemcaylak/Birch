@@ -17,7 +17,7 @@ void warn(const std::string& msg);
 /**
  * Find a path in a list of possible locations.
  */
-fs::path find(const std::list<fs::path>& paths, const fs::path path);
+std::filesystem::path find(const std::list<std::filesystem::path>& paths, const std::filesystem::path path);
 
 /**
  * Copy a source file to a destination file, but only if the destination
@@ -28,7 +28,7 @@ fs::path find(const std::list<fs::path>& paths, const fs::path path);
  *
  * @return True if the file was copied, because of the above criteria.
  */
-bool copy_if_newer(fs::path src, fs::path dst);
+bool copy_if_newer(std::filesystem::path src, std::filesystem::path dst);
 
 /**
  * Copy a source file to a destination file, but only overwrite an existing
@@ -39,7 +39,7 @@ bool copy_if_newer(fs::path src, fs::path dst);
  *
  * @return True if the file was copied, because of the above criteria.
  */
-bool copy_with_prompt(fs::path src, fs::path dst);
+bool copy_with_prompt(std::filesystem::path src, std::filesystem::path dst);
 
 /**
  * Copy a source file to a destination file, overwriting always.
@@ -47,28 +47,28 @@ bool copy_with_prompt(fs::path src, fs::path dst);
  * @param src Source file.
  * @param dst Destination file.
  */
-void copy_with_force(fs::path src, fs::path dst);
+void copy_with_force(std::filesystem::path src, std::filesystem::path dst);
 
 /**
  * Remove the current directory (.) from the start of a path.
  */
-fs::path remove_first(const fs::path& path);
+std::filesystem::path remove_first(const std::filesystem::path& path);
 
 /**
  * Remove the common prefix of both base and path from path, and return the
  * result.
  */
-fs::path remove_common_prefix(const fs::path& base, const fs::path& path);
+std::filesystem::path remove_common_prefix(const std::filesystem::path& base, const std::filesystem::path& path);
 
 /**
  * Read the entirety of a file to a string.
  */
-std::string read_all(const fs::path& path);
+std::string read_all(const std::filesystem::path& path);
 
 /**
  * Write the entirety of a file from a string.
  */
-void write_all(const fs::path& path, const std::string& contents);
+void write_all(const std::filesystem::path& path, const std::string& contents);
 
 /**
  * Write the entirety of a file from a string, but only if the new contents
@@ -76,7 +76,7 @@ void write_all(const fs::path& path, const std::string& contents);
  *
  * @return True if the contents differs, and so the file was written.
  */
-bool write_all_if_different(const fs::path& path,
+bool write_all_if_different(const std::filesystem::path& path,
     const std::string& contents);
 
 /**
@@ -94,16 +94,16 @@ bool isPower2(const int x);
  */
 class CWD {
 public:
-  CWD(const fs::path& path) : previous(fs::absolute(fs::current_path())) {
-    fs::current_path(path);
+  CWD(const std::filesystem::path& path) : previous(std::filesystem::absolute(std::filesystem::current_path())) {
+    std::filesystem::current_path(path);
   }
 
   ~CWD() {
-    fs::current_path(previous);
+    std::filesystem::current_path(previous);
   }
 
 private:
-  fs::path previous;
+  std::filesystem::path previous;
 };
 
 }

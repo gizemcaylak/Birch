@@ -257,10 +257,10 @@ bi::Driver::Driver(int argc, char** argv) :
     }
   }
   if (!prefix.empty()) {
-    share_dirs.push_back(fs::path(prefix) / "share" / "birch");
+    share_dirs.push_back(std::filesystem::path(prefix) / "share" / "birch");
   }
 #ifdef DATADIR
-  share_dirs.push_back(fs::path(STRINGIFY(DATADIR)) / "birch");
+  share_dirs.push_back(std::filesystem::path(STRINGIFY(DATADIR)) / "birch");
 #endif
 
   /* include dirs */
@@ -273,7 +273,7 @@ bi::Driver::Driver(int argc, char** argv) :
     }
   }
   if (!prefix.empty()) {
-    include_dirs.push_back(fs::path(prefix) / "include");
+    include_dirs.push_back(std::filesystem::path(prefix) / "include");
   }
 #ifdef INCLUDEDIR
   include_dirs.push_back(STRINGIFY(INCLUDEDIR));
@@ -287,7 +287,7 @@ bi::Driver::Driver(int argc, char** argv) :
     }
   }
   if (!prefix.empty()) {
-    lib_dirs.push_back(fs::path(prefix) / "lib");
+    lib_dirs.push_back(std::filesystem::path(prefix) / "lib");
   }
 #ifdef LIBDIR
   lib_dirs.push_back(STRINGIFY(LIBDIR));
@@ -308,7 +308,7 @@ void bi::Driver::run(const std::string& prog,
   char* msg;
   prog_t* fcn;
 
-  fs::path so = std::string("lib") + tarname(packageName);
+  std::filesystem::path so = std::string("lib") + tarname(packageName);
 #ifdef __APPLE__
   so.replace_extension(".dylib");
 #else
@@ -391,23 +391,23 @@ void bi::Driver::clean() {
   setup();
 
   CWD cwd(work_dir);
-  fs::remove_all("build");
-  fs::remove_all("autom4te.cache");
-  fs::remove_all("m4");
-  fs::remove("aclocal.m4");
-  fs::remove("autogen.log");
-  fs::remove("autogen.sh");
-  fs::remove("compile");
-  fs::remove("config.guess");
-  fs::remove("config.sub");
-  fs::remove("configure");
-  fs::remove("configure.ac");
-  fs::remove("depcomp");
-  fs::remove("install-sh");
-  fs::remove("ltmain.sh");
-  fs::remove("Makefile.am");
-  fs::remove("Makefile.in");
-  fs::remove("missing");
+  std::filesystem::remove_all("build");
+  std::filesystem::remove_all("autom4te.cache");
+  std::filesystem::remove_all("m4");
+  std::filesystem::remove("aclocal.m4");
+  std::filesystem::remove("autogen.log");
+  std::filesystem::remove("autogen.sh");
+  std::filesystem::remove("compile");
+  std::filesystem::remove("config.guess");
+  std::filesystem::remove("config.sub");
+  std::filesystem::remove("configure");
+  std::filesystem::remove("configure.ac");
+  std::filesystem::remove("depcomp");
+  std::filesystem::remove("install-sh");
+  std::filesystem::remove("ltmain.sh");
+  std::filesystem::remove("Makefile.am");
+  std::filesystem::remove("Makefile.in");
+  std::filesystem::remove("missing");
 }
 
 void bi::Driver::tune() {
@@ -471,7 +471,7 @@ double bi::Driver::time() {
   driver.install();
 
   std::stringstream cmd;
-  cmd << (fs::path(".") / "time.sh").string() << " _" << suffix();
+  cmd << (std::filesystem::path(".") / "time.sh").string() << " _" << suffix();
   auto start = std::chrono::system_clock::now();
   int ret = std::system(cmd.str().c_str());
   auto end = std::chrono::system_clock::now();
@@ -489,11 +489,11 @@ double bi::Driver::time() {
 void bi::Driver::init() {
   CWD cwd(work_dir);
 
-  fs::create_directory("bi");
-  fs::create_directory("input");
-  fs::create_directory("output");
-  fs::create_directory("config");
-  fs::create_directory("diagnostic");
+  std::filesystem::create_directory("bi");
+  std::filesystem::create_directory("input");
+  std::filesystem::create_directory("output");
+  std::filesystem::create_directory("config");
+  std::filesystem::create_directory("diagnostic");
   copy_with_prompt(find(share_dirs, "gitignore"), ".gitignore");
   copy_with_prompt(find(share_dirs, "LICENSE"), "LICENSE");
 
@@ -501,7 +501,7 @@ void bi::Driver::init() {
 
   contents = read_all(find(share_dirs, "META.json"));
   boost::replace_all(contents, "PACKAGE_NAME", packageName);
-  fs::ofstream metaStream("META.json");
+  std::ofstream metaStream("META.json");
   if (metaStream.fail()) {
     std::stringstream buf;
     buf << "Could not open META.json for writing.";
@@ -511,7 +511,7 @@ void bi::Driver::init() {
 
   contents = read_all(find(share_dirs, "README.md"));
   boost::replace_all(contents, "PACKAGE_NAME", packageName);
-  fs::ofstream readmeStream("README.md");
+  std::ofstream readmeStream("README.md");
   if (readmeStream.fail()) {
     std::stringstream buf;
     buf << "Could not open README.md for writing.";
@@ -524,14 +524,14 @@ void bi::Driver::check() {
   CWD cwd(work_dir);
 
   /* read META.json */
-  if (!fs::exists("META.json")) {
+  if (!std::filesystem::exists("META.json")) {
     warn("no META.json file.");
   } else {
     meta();
   }
 
   /* check LICENSE */
-  if (!fs::exists("LICENSE")) {
+  if (!std::filesystem::exists("LICENSE")) {
     warn("no LICENSE file; create a LICENSE file containing the "
         "distribution license (e.g. GPL or BSD) of the package.");
   } else if (allFiles.find("LICENSE") == allFiles.end()) {
@@ -539,7 +539,7 @@ void bi::Driver::check() {
   }
 
   /* check README.md */
-  if (!fs::exists("README.md")) {
+  if (!std::filesystem::exists("README.md")) {
     warn("no README.md file; create a README.md file documenting the "
         "package in Markdown format.");
   } else if (allFiles.find("README.md") == allFiles.end()) {
@@ -561,14 +561,14 @@ void bi::Driver::check() {
   exclude.insert("autogen.sh");
   exclude.insert("ltmain.sh");
 
-  fs::recursive_directory_iterator iter("."), end;
+  std::filesystem::recursive_directory_iterator iter("."), end;
   while (iter != end) {
     auto path = remove_first(iter->path());
     auto name = path.filename().string();
     auto ext = path.extension().string();
     if (path.string() == "build" || path.string() == "output"
         || path.string() == "diagnostic" || path.string() == "site") {
-      iter.no_push();
+      iter.disable_recursion_pending();
     } else if (interesting.find(ext) != interesting.end()
         && exclude.find(name) == exclude.end()) {
       if (allFiles.find(path.string()) == allFiles.end()) {
@@ -588,12 +588,12 @@ void bi::Driver::docs() {
   Package* package = createPackage();
 
   /* parse all files */
-  Compiler compiler(package, fs::path("build") / suffix(), unity);
+  Compiler compiler(package, std::filesystem::path("build") / suffix(), unity);
   compiler.parse();
   compiler.resolve();
 
   /* output everything into single file */
-  fs::ofstream docsStream("DOCS.md");
+  std::ofstream docsStream("DOCS.md");
   if (docsStream.fail()) {
     std::stringstream buf;
     buf << "Could not open DOCS.md for writing.";
@@ -604,7 +604,7 @@ void bi::Driver::docs() {
   docsStream.close();
 
   /* split that file into multiple files for mkdocs */
-  fs::ofstream mkdocsStream("mkdocs.yml");
+  std::ofstream mkdocsStream("mkdocs.yml");
   if (mkdocsStream.fail()) {
     std::stringstream buf;
     buf << "Could not open mkdocs.yml for writing.";
@@ -622,19 +622,19 @@ void bi::Driver::docs() {
       << "  - 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/MathJax.js?config=TeX-MML-AM_CHTML'\n";
   mkdocsStream << "nav:\n";
 
-  fs::path docs("docs"), file;
-  fs::create_directories(docs);
-  fs::create_directories(docs / "types");
-  fs::create_directories(docs / "variables");
-  fs::create_directories(docs / "programs");
-  fs::create_directories(docs / "functions");
-  fs::create_directories(docs / "fibers");
-  fs::create_directories(docs / "unary_operators");
-  fs::create_directories(docs / "binary_operators");
-  fs::create_directories(docs / "classes");
+  std::filesystem::path docs("docs"), file;
+  std::filesystem::create_directories(docs);
+  std::filesystem::create_directories(docs / "types");
+  std::filesystem::create_directories(docs / "variables");
+  std::filesystem::create_directories(docs / "programs");
+  std::filesystem::create_directories(docs / "functions");
+  std::filesystem::create_directories(docs / "fibers");
+  std::filesystem::create_directories(docs / "unary_operators");
+  std::filesystem::create_directories(docs / "binary_operators");
+  std::filesystem::create_directories(docs / "classes");
 
   /* index file */
-  if (fs::exists("README.md")) {
+  if (std::filesystem::exists("README.md")) {
     copy_with_force("README.md", docs / "index.md");
   } else {
     docsStream.open(docs / "index.md");
@@ -662,7 +662,7 @@ void bi::Driver::docs() {
       if (h1 == "Variables" || h1 == "Types") {
         std::string dir = h1;
         boost::to_lower(dir);
-        file = fs::path(dir) / "index.md";
+        file = std::filesystem::path(dir) / "index.md";
         mkdocsStream << file.string();
         if (docsStream.is_open()) {
           docsStream.close();
@@ -677,7 +677,7 @@ void bi::Driver::docs() {
       /* second level header */
       h2 = match.str(2);
       mkdocsStream << "    - '" << h2 << "': ";
-      file = fs::path(nice(h1)) / (nice(h2) + ".md");
+      file = std::filesystem::path(nice(h1)) / (nice(h2) + ".md");
       mkdocsStream << file.string() << "\n";
       if (docsStream.is_open()) {
         docsStream.close();
@@ -703,7 +703,7 @@ void bi::Driver::meta() {
   CWD cwd(work_dir);
 
   /* check for META.json */
-  if (!fs::exists("META.json")) {
+  if (!std::filesystem::exists("META.json")) {
     throw DriverException("META.json does not exist.");
   }
 
@@ -740,7 +740,7 @@ void bi::Driver::meta() {
   /* convert package requirements to header and library requirements */
   for (auto name : metaFiles["require.package"]) {
     auto internalName = tarname(name.string());
-    auto header = fs::path("bi") / internalName;
+    auto header = std::filesystem::path("bi") / internalName;
     header.replace_extension(".hpp");
     metaFiles["require.header"].push_back(header.string());
     metaFiles["require.library"].push_back(internalName);
@@ -754,15 +754,15 @@ void bi::Driver::meta() {
 }
 
 void bi::Driver::setup() {
-  auto build_dir = fs::path("build") / suffix();
+  auto build_dir = std::filesystem::path("build") / suffix();
   CWD cwd(work_dir);
 
   /* internal name of package */
   auto internalName = tarname(packageName);
 
   /* create build directory */
-  if (!fs::exists(build_dir)) {
-    if (!fs::create_directories(build_dir)) {
+  if (!std::filesystem::exists(build_dir)) {
+    if (!std::filesystem::create_directories(build_dir)) {
       std::stringstream buf;
       buf << "could not create build directory " << build_dir << '.';
       throw DriverException(buf.str());
@@ -771,22 +771,23 @@ void bi::Driver::setup() {
     /* workaround for error given by some versions of autotools, "Something
      * went wrong bootstrapping makefile fragments for automatic dependency
      * tracking..." */
-    fs::create_directories(build_dir / "bi" / ".deps");
-    fs::ofstream(build_dir / "bi" / ".deps" / (internalName + ".gch.Plo"));
+    std::filesystem::create_directories(build_dir / "bi" / ".deps");
+    std::ofstream(build_dir / "bi" / ".deps" / (internalName + ".gch.Plo"));
   }
 
   /* update "latest" symlink to point to this build directory */
-  auto symlink_dir = fs::path("build") / "latest";
-  fs::remove(symlink_dir);
-  fs::create_symlink(suffix(), symlink_dir);
+  auto symlink_dir = std::filesystem::path("build") / "latest";
+  std::filesystem::remove(symlink_dir);
+  std::filesystem::create_symlink(suffix(), symlink_dir);
 
   /* copy build files into build directory */
   newAutogen = copy_if_newer(find(share_dirs, "autogen.sh"), "autogen.sh");
-  fs::permissions("autogen.sh", fs::add_perms | fs::owner_exe);
+  std::filesystem::permissions("autogen.sh", std::filesystem::perms::owner_exec,
+      std::filesystem::perm_options::add);
 
-  fs::path m4_dir("m4");
-  if (!fs::exists(m4_dir)) {
-    if (!fs::create_directory(m4_dir)) {
+  std::filesystem::path m4_dir("m4");
+  if (!std::filesystem::exists(m4_dir)) {
+    if (!std::filesystem::create_directory(m4_dir)) {
       std::stringstream buf;
       buf << "Could not create m4 directory " << m4_dir << '.';
       throw DriverException(buf.str());
@@ -858,7 +859,7 @@ void bi::Driver::setup() {
   if (!unity) {
     for (auto file : metaFiles["manifest.source"]) {
       if (file.extension().compare(".bi") == 0) {
-        fs::path cppFile = file;
+        std::filesystem::path cppFile = file;
         cppFile.replace_extension(".cpp");
         makeStream << " \\\n  " << cppFile.string();
       }
@@ -909,7 +910,7 @@ bi::Package* bi::Driver::createPackage() {
   Package* package = new Package(packageName);
   for (auto name : metaFiles["require.package"]) {
     /* add *.bih dependency */
-    fs::path header = fs::path("bi") / tarname(name.string());
+    std::filesystem::path header = std::filesystem::path("bi") / tarname(name.string());
     header.replace_extension(".bih");
     package->addHeader(find(include_dirs, header).string());
   }
@@ -924,7 +925,7 @@ bi::Package* bi::Driver::createPackage() {
 void bi::Driver::compile() {
   Package* package = createPackage();
 
-  auto build_dir = fs::path("build") / suffix();
+  auto build_dir = std::filesystem::path("build") / suffix();
   CWD cwd(work_dir);
 
   Compiler compiler(package, build_dir, unity);
@@ -937,12 +938,12 @@ void bi::Driver::compile() {
 
 void bi::Driver::autogen() {
   if (newAutogen || newConfigure || newMake
-      || !fs::exists(work_dir / "configure")
-      || !fs::exists(work_dir / "install-sh")) {
+      || !std::filesystem::exists(work_dir / "configure")
+      || !std::filesystem::exists(work_dir / "install-sh")) {
     CWD cwd(work_dir);
 
     std::stringstream cmd;
-    cmd << (fs::path(".") / "autogen.sh");
+    cmd << (std::filesystem::path(".") / "autogen.sh");
     if (verbose) {
       std::cerr << cmd.str() << std::endl;
     } else {
@@ -1078,7 +1079,7 @@ void bi::Driver::configure() {
     if (arch == "js" || arch == "wasm") {
       cmd << "emconfigure ";
     }
-    cmd << (fs::path("..") / ".." / "configure").string() << " " << options.str();
+    cmd << (std::filesystem::path("..") / ".." / "configure").string() << " " << options.str();
     // ^ build dir is work_dir/build/suffix, so configure script two dirs up
     if (!cppflags.str().empty()) {
       cmd << " CPPFLAGS=\"$CPPFLAGS " << cppflags.str() << "\"";
@@ -1207,7 +1208,7 @@ void bi::Driver::readFiles(const boost::property_tree::ptree& meta,
     for (auto file : files.get()) {
       if (auto str = file.second.get_value_optional<std::string>()) {
         if (str) {
-          auto filePath = fs::path(str.get());
+          auto filePath = std::filesystem::path(str.get());
           auto fileStr = filePath.string();
           if (checkExists && !exists(work_dir / filePath)) {
             warn(fileStr + " in META.json does not exist.");

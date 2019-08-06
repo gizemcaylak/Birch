@@ -16,7 +16,7 @@
 bi::Compiler* compiler = nullptr;
 std::stringstream raw;
 
-bi::Compiler::Compiler(Package* package, const fs::path& build_dir,
+bi::Compiler::Compiler(Package* package, const std::filesystem::path& build_dir,
     const bool unity) :
     scope(new Scope(GLOBAL_SCOPE)),
     package(package),
@@ -54,7 +54,7 @@ void bi::Compiler::resolve() {
 }
 
 void bi::Compiler::gen() {
-  fs::path path;
+  std::filesystem::path path;
   std::stringstream stream;
 
   bih_ostream bihOutput(stream);

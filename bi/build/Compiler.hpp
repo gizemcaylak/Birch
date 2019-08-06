@@ -22,7 +22,7 @@ public:
    * @param build_dir Build directory.
    * @param unity Use unity build?
    */
-  Compiler(Package* package, const fs::path& build_dir,
+  Compiler(Package* package, const std::filesystem::path& build_dir,
       const bool unity = false);
 
   /**
@@ -64,7 +64,7 @@ private:
   /**
    * Build directory.
    */
-  fs::path build_dir;
+  std::filesystem::path build_dir;
 
   /**
    * Use unity build?
