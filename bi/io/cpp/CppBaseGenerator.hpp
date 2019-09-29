@@ -89,7 +89,6 @@ public:
   virtual void visit(const EmptyType* o);
   virtual void visit(const ArrayType* o);
   virtual void visit(const TupleType* o);
-  virtual void visit(const SequenceType* o);
   virtual void visit(const FunctionType* o);
   virtual void visit(const FiberType* o);
   virtual void visit(const OptionalType* o);
@@ -199,8 +198,7 @@ void bi::CppBaseGenerator::genInit(const T* o) {
       middle(" = " << o->value);
     } else if (!o->type->isWeak()) {
       ++inPointer;
-      middle(" = " << o->type << "::create_");
-      middle('(' << o->args << ')');
+      middle(" = libbirch::make_object<" << o->type << ">(" << o->args << ')');
     }
   } else if (!o->value->isEmpty()) {
     middle(" = " << o->value);

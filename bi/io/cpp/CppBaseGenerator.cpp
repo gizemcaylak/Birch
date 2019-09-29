@@ -480,7 +480,7 @@ void bi::CppBaseGenerator::visit(const Program* o) {
           middle(" = " << param->value);
         } else if (param->type->isClass()) {
           ++inPointer;
-          middle(" = " << param->type << "::create_()");
+          middle(" = libbirch::make_object<" << param->type << ">()");
         }
         finish(';');
       }
@@ -791,11 +791,6 @@ void bi::CppBaseGenerator::visit(const ArrayType* o) {
 void bi::CppBaseGenerator::visit(const TupleType* o) {
   middle("std::tuple<" << o->single << '>');
 }
-
-void bi::CppBaseGenerator::visit(const SequenceType* o) {
-  middle("std::initializer_list<" << o->single << '>');
-}
-
 void bi::CppBaseGenerator::visit(const FunctionType* o) {
   middle("std::function<" << o->returnType << '(' << o->params << ")>");
 }
@@ -902,7 +897,8 @@ void bi::CppBaseGenerator::genArg(const Expression* arg, const Type* type) {
    * not */
   auto isThis = dynamic_cast<const This*>(arg);
   auto isSuper = dynamic_cast<const Super*>(arg);
-  if (!arg->type->equals(*type) || isThis || isSuper) {
+  auto isSequence = dynamic_cast<const Sequence*>(arg);
+  if (!arg->type->equals(*type) || isThis || isSuper || isSequence) {
     middle(type->canonical() << '(' << arg << ')');
   } else {
     middle(arg);
