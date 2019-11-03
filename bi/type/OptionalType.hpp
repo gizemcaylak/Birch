@@ -31,7 +31,6 @@ public:
   virtual Type* accept(Modifier* visitor);
   virtual void accept(Visitor* visitor) const;
 
-  virtual bool isValue() const;
   virtual bool isOptional() const;
   virtual Type* unwrap();
   virtual const Type* unwrap() const;
@@ -44,14 +43,12 @@ public:
   virtual bool isConvertible(const GenericType& o) const;
   virtual bool isConvertible(const MemberType& o) const;
   virtual bool isConvertible(const OptionalType& o) const;
-  virtual bool isConvertible(const WeakType& o) const;
 
   virtual bool dispatchIsAssignable(const Type& o) const;
   virtual bool isAssignable(const ClassType& o) const;
   virtual bool isAssignable(const GenericType& o) const;
   virtual bool isAssignable(const MemberType& o) const;
   virtual bool isAssignable(const OptionalType& o) const;
-  virtual bool isAssignable(const WeakType& o) const;
 
   virtual Type* dispatchCommon(const Type& o) const;
   virtual Type* common(const ArrayType& o) const;
@@ -64,7 +61,6 @@ public:
   virtual Type* common(const MemberType& o) const;
   virtual Type* common(const NilType& o) const;
   virtual Type* common(const OptionalType& o) const;
-  virtual Type* common(const WeakType& o) const;
   virtual Type* common(const TupleType& o) const;
   virtual Type* common(const UnknownType& o) const;
   virtual Type* common(const TypeList& o) const;

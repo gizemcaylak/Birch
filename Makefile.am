@@ -52,6 +52,7 @@ COMMON_SOURCES = \
   bi/common/TypeArgumented.cpp \
   bi/common/TypeParameterised.cpp \
   bi/common/Valued.cpp \
+  bi/exception/AbstractBodyException.cpp \
   bi/exception/AmbiguousCallException.cpp \
   bi/exception/AssignmentOperatorException.cpp \
   bi/exception/AssignmentException.cpp \
@@ -91,7 +92,6 @@ COMMON_SOURCES = \
   bi/exception/YieldTypeException.cpp \
   bi/expression/Assign.cpp \
   bi/expression/Binary.cpp \
-  bi/expression/BinaryCall.cpp \
   bi/expression/Cast.cpp \
   bi/expression/Call.cpp \
   bi/expression/EmptyExpression.cpp \
@@ -119,7 +119,6 @@ COMMON_SOURCES = \
   bi/expression/Span.cpp \
   bi/expression/Super.cpp \
   bi/expression/This.cpp \
-  bi/expression/UnaryCall.cpp \
   bi/io/cpp/CppBaseGenerator.cpp \
   bi/io/cpp/CppClassGenerator.cpp \
   bi/io/cpp/CppFiberGenerator.cpp \
@@ -180,10 +179,10 @@ COMMON_SOURCES = \
   bi/type/UnknownType.cpp \
   bi/type/TypeIterator.cpp \
   bi/type/TypeList.cpp \
-  bi/type/WeakType.cpp \
   bi/visitor/Annotator.cpp \
   bi/visitor/Cloner.cpp \
   bi/visitor/Gatherer.cpp \
+  bi/visitor/IsValue.cpp \
   bi/visitor/Modifier.cpp \
   bi/visitor/Resolver.cpp \
   bi/visitor/Visitor.cpp \
@@ -210,6 +209,7 @@ noinst_HEADERS = \
   bi/common/Dictionary.hpp \
   bi/common/Located.hpp \
   bi/common/Location.hpp \
+  bi/common/Lookup.hpp \
   bi/common/Name.hpp \
   bi/common/Named.hpp \
   bi/common/Numbered.hpp \
@@ -228,6 +228,7 @@ noinst_HEADERS = \
   bi/common/Unknown.hpp \
   bi/common/Valued.hpp \
   bi/exception/all.hpp \
+  bi/exception/AbstractBodyException.cpp \
   bi/exception/AmbiguousCallException.hpp \
   bi/exception/AssignmentException.hpp \
   bi/exception/AssumeException.hpp \
@@ -266,7 +267,6 @@ noinst_HEADERS = \
   bi/expression/all.hpp \
   bi/expression/Assign.hpp \
   bi/expression/Binary.hpp \
-  bi/expression/BinaryCall.hpp \
   bi/expression/Cast.hpp \
   bi/expression/Call.hpp \
   bi/expression/EmptyExpression.hpp \
@@ -294,7 +294,6 @@ noinst_HEADERS = \
   bi/expression/Span.hpp \
   bi/expression/Super.hpp \
   bi/expression/This.hpp \
-  bi/expression/UnaryCall.hpp \
   bi/io/cpp/CppBaseGenerator.hpp \
   bi/io/cpp/CppClassGenerator.hpp \
   bi/io/cpp/CppFiberGenerator.hpp \
@@ -358,11 +357,11 @@ noinst_HEADERS = \
   bi/type/UnknownType.hpp \
   bi/type/TypeIterator.hpp \
   bi/type/TypeList.hpp \
-  bi/type/WeakType.hpp \
   bi/visitor/all.hpp \
   bi/visitor/Annotator.hpp \
   bi/visitor/Cloner.hpp \
   bi/visitor/Gatherer.hpp \
+  bi/visitor/IsValue.hpp \
   bi/visitor/Modifier.hpp \
   bi/visitor/Resolver.hpp \
   bi/visitor/Visitor.hpp \

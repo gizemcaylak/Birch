@@ -29,9 +29,17 @@ public:
   virtual void visit(const Parentheses* o);
   virtual void visit(const Sequence* o);
   virtual void visit(const Cast* o);
-  virtual void visit(const Call* o);
-  virtual void visit(const BinaryCall* o);
-  virtual void visit(const UnaryCall* o);
+  virtual void visit(const Call<Unknown>* o);
+  virtual void visit(const Call<Function>* o);
+  virtual void visit(const Call<MemberFunction>* o);
+  virtual void visit(const Call<Fiber>* o);
+  virtual void visit(const Call<MemberFiber>* o);
+  virtual void visit(const Call<Parameter>* o);
+  virtual void visit(const Call<LocalVariable>* o);
+  virtual void visit(const Call<MemberVariable>* o);
+  virtual void visit(const Call<GlobalVariable>* o);
+  virtual void visit(const Call<BinaryOperator>* o);
+  virtual void visit(const Call<UnaryOperator>* o);
   virtual void visit(const Assign* o);
   virtual void visit(const Slice* o);
   virtual void visit(const Query* o);
@@ -92,7 +100,6 @@ public:
   virtual void visit(const FunctionType* o);
   virtual void visit(const FiberType* o);
   virtual void visit(const OptionalType* o);
-  virtual void visit(const WeakType* o);
   virtual void visit(const ClassType* o);
   virtual void visit(const BasicType* o);
   virtual void visit(const GenericType* o);
@@ -134,10 +141,10 @@ protected:
    * Generate arguments for function calls with appropriate casts where
    * necessary.
    */
-  void genArgs(const Call* o);
-  void genLeftArg(const BinaryCall* o);
-  void genRightArg(const BinaryCall* o);
-  void genSingleArg(const UnaryCall* o);
+  void genArgs(const Expression* args, const Type* types);
+  void genLeftArg(const Call<BinaryOperator>* o);
+  void genRightArg(const Call<BinaryOperator>* o);
+  void genSingleArg(const Call<UnaryOperator>* o);
   void genArg(const Expression* arg, const Type* type);
 
   /**
@@ -151,11 +158,6 @@ protected:
   int inAssign;
 
   /**
-   * Are we inside custom pointer code?
-   */
-  int inPointer;
-
-  /**
    * Are we inside a constructor?
    */
   int inConstructor;
@@ -164,6 +166,11 @@ protected:
    * Are we inside the body of a lambda function?
    */
   int inLambda;
+
+  /**
+   * Are we inside a sequence?
+   */
+  int inSequence;
 };
 }
 
@@ -179,12 +186,18 @@ void bi::CppBaseGenerator::genInit(const T* o) {
           middle(o->value);
         } else {
           middle("libbirch::make_array_and_assign<" << type->single << ">(");
-          middle("libbirch::make_frame(" << o->brackets << ')');
+          if (!o->isValue()) {
+            middle("context_, ");
+          }
+          middle("libbirch::make_shape(" << o->brackets << ')');
           middle(", " << o->value << ')');
         }
       } else {
         middle(" = libbirch::make_array<" << type->single << ">(");
-        middle("libbirch::make_frame(" << o->brackets << ')');
+        if (!o->isValue()) {
+          middle("context_, ");
+        }
+        middle("libbirch::make_shape(" << o->brackets << ')');
         if (!o->args->isEmpty()) {
           middle(", " << o->args);
         }
@@ -193,15 +206,22 @@ void bi::CppBaseGenerator::genInit(const T* o) {
     } else if (!o->value->isEmpty()) {
       middle(" = " << o->value);
     }
-  } else if (o->type->isClass() || o->type->isWeak()) {
+  } else if (o->type->isClass()) {
     if (!o->value->isEmpty()) {
-      middle(" = " << o->value);
-    } else if (!o->type->isWeak()) {
-      ++inPointer;
-      middle(" = libbirch::make_object<" << o->type << ">(" << o->args << ')');
+      middle("(context_, " << o->value << ')');
+    } else {
+      middle(" = libbirch::make_pointer<" << o->type << ">(context_");
+      if (!o->args->isEmpty()) {
+        middle(", " << o->args);
+      }
+      middle(")");
     }
   } else if (!o->value->isEmpty()) {
-    middle(" = " << o->value);
+    middle('(');
+    if (!o->type->isValue()) {
+      middle("context_, ");
+    }
+    middle(o->value << ')');
   }
 }
 

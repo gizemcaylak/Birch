@@ -5,13 +5,16 @@
 
 #include "bi/common/Typed.hpp"
 #include "bi/common/Located.hpp"
+#include "bi/common/Unknown.hpp"
+#include "bi/common/Lookup.hpp"
+#include "bi/expression/ExpressionIterator.hpp"
+#include "bi/expression/ExpressionConstIterator.hpp"
 
 namespace bi {
 class Cloner;
 class Modifier;
 class Visitor;
-class ExpressionIterator;
-class ExpressionConstIterator;
+template<class T> class Call;
 
 /**
  * Expression.
@@ -66,6 +69,12 @@ public:
   virtual void accept(Visitor* visitor) const = 0;
 
   /**
+   * Is this a value expression? Such an expression contains no usage of
+   * class types.
+   */
+  bool isValue() const;
+
+  /**
    * Is expression empty?
    */
   virtual bool isEmpty() const;
@@ -93,7 +102,7 @@ public:
   /**
    * Number of expresions in an expression list.
    */
-  virtual int width() const;
+  int width() const;
 
   /**
    * Number of range expressions in an expression list.
@@ -123,12 +132,30 @@ public:
   ExpressionConstIterator end() const;
 
   /**
-   * Resolve a call.
+   * Look up the type of a call.
    *
    * @param args Arguments.
    *
-   * @return The type of the function called.
+   * @return The type of the call.
    */
-  virtual FunctionType* resolve(Argumented* o);
+  virtual Lookup lookup(Expression* args);
+
+  /**
+   * Resolve a call.
+   *
+   * @param o The unresolved call.
+   *
+   * @return The resolved call.
+   */
+  virtual Parameter* resolve(Call<Parameter>* o);
+  virtual LocalVariable* resolve(Call<LocalVariable>* o);
+  virtual MemberVariable* resolve(Call<MemberVariable>* o);
+  virtual GlobalVariable* resolve(Call<GlobalVariable>* o);
+  virtual Function* resolve(Call<Function>* o);
+  virtual MemberFunction* resolve(Call<MemberFunction>* o);
+  virtual Fiber* resolve(Call<Fiber>* o);
+  virtual MemberFiber* resolve(Call<MemberFiber>* o);
+  virtual UnaryOperator* resolve(Call<UnaryOperator>* o);
+  virtual BinaryOperator* resolve(Call<BinaryOperator>* o);
 };
 }

@@ -71,19 +71,67 @@ bi::Expression* bi::Modifier::modify(Cast* o) {
   return o;
 }
 
-bi::Expression* bi::Modifier::modify(Call* o) {
+bi::Expression* bi::Modifier::modify(Call<Unknown>* o) {
   o->single = o->single->accept(this);
   o->args = o->args->accept(this);
   return o;
 }
 
-bi::Expression* bi::Modifier::modify(BinaryCall* o) {
+bi::Expression* bi::Modifier::modify(Call<Function>* o) {
   o->single = o->single->accept(this);
   o->args = o->args->accept(this);
   return o;
 }
 
-bi::Expression* bi::Modifier::modify(UnaryCall* o) {
+bi::Expression* bi::Modifier::modify(Call<MemberFunction>* o) {
+  o->single = o->single->accept(this);
+  o->args = o->args->accept(this);
+  return o;
+}
+
+bi::Expression* bi::Modifier::modify(Call<Fiber>* o) {
+  o->single = o->single->accept(this);
+  o->args = o->args->accept(this);
+  return o;
+}
+
+bi::Expression* bi::Modifier::modify(Call<MemberFiber>* o) {
+  o->single = o->single->accept(this);
+  o->args = o->args->accept(this);
+  return o;
+}
+
+bi::Expression* bi::Modifier::modify(Call<Parameter>* o) {
+  o->single = o->single->accept(this);
+  o->args = o->args->accept(this);
+  return o;
+}
+
+bi::Expression* bi::Modifier::modify(Call<LocalVariable>* o) {
+  o->single = o->single->accept(this);
+  o->args = o->args->accept(this);
+  return o;
+}
+
+bi::Expression* bi::Modifier::modify(Call<MemberVariable>* o) {
+  o->single = o->single->accept(this);
+  o->args = o->args->accept(this);
+  return o;
+}
+
+bi::Expression* bi::Modifier::modify(Call<GlobalVariable>* o) {
+  o->single = o->single->accept(this);
+  o->args = o->args->accept(this);
+  return o;
+}
+
+bi::Expression* bi::Modifier::modify(Call<BinaryOperator>* o) {
+  o->single = o->single->accept(this);
+  o->args = o->args->accept(this);
+  return o;
+}
+
+bi::Expression* bi::Modifier::modify(Call<UnaryOperator>* o) {
   o->single = o->single->accept(this);
   o->args = o->args->accept(this);
   return o;
@@ -467,11 +515,6 @@ bi::Type* bi::Modifier::modify(FiberType* o) {
 }
 
 bi::Type* bi::Modifier::modify(OptionalType* o) {
-  o->single = o->single->accept(this);
-  return o;
-}
-
-bi::Type* bi::Modifier::modify(WeakType* o) {
   o->single = o->single->accept(this);
   return o;
 }

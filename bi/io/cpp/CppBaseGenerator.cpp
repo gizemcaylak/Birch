@@ -5,6 +5,7 @@
 
 #include "bi/io/cpp/CppClassGenerator.hpp"
 #include "bi/io/cpp/CppFiberGenerator.hpp"
+#include "bi/io/bih_ostream.hpp"
 #include "bi/primitive/encode.hpp"
 
 #include "boost/algorithm/string.hpp"
@@ -14,9 +15,9 @@ bi::CppBaseGenerator::CppBaseGenerator(std::ostream& base, const int level,
     indentable_ostream(base, level),
     header(header),
     inAssign(0),
-    inPointer(0),
     inConstructor(0),
-    inLambda(0) {
+    inLambda(0),
+    inSequence(0) {
   //
 }
 
@@ -50,49 +51,154 @@ void bi::CppBaseGenerator::visit(const Literal<const char*>* o) {
 void bi::CppBaseGenerator::visit(const Parentheses* o) {
   if (o->single->type->isList()) {
     if (inAssign) {
-      middle("std::tie(" << o->single << ')');
+      middle("libbirch::tie(");
     } else {
-      middle("std::make_tuple(" << o->single << ')');
+      middle("libbirch::make_tuple(");
+      if (!o->type->isValue()) {
+        middle("context_, ");
+      }
     }
   } else {
-    middle('(' << o->single << ')');
+    middle('(');
   }
+  middle(o->single << ')');
 }
 
 void bi::CppBaseGenerator::visit(const Sequence* o) {
   if (o->single->isEmpty()) {
     middle("libbirch::Nil()");
   } else {
-    middle("{ " << o->single << " }");
+    if (inSequence == 0) {
+      auto type = dynamic_cast<ArrayType*>(o->type);
+      assert(type);
+      middle("libbirch::make_array<" << type->element() << ">(");
+      if (!o->type->isValue()) {
+        middle("context_, ");
+      }
+      middle("libbirch::make_shape(");
+      auto seq = o;
+      do {
+        if (seq != o) {
+          middle(", ");
+        }
+        middle(seq->single->width());
+        seq = dynamic_cast<const Sequence*>(*seq->single->begin());
+      } while (seq);
+      middle("), std::initializer_list<" << type->element() << ">({ ");
+    }
+    ++inSequence;
+    middle(o->single);
+    --inSequence;
+    if (inSequence == 0) {
+      middle(" }))");
+    }
   }
 }
 
 void bi::CppBaseGenerator::visit(const Cast* o) {
   if (o->returnType->isClass()) {
-    ++inPointer;
     middle("libbirch::dynamic_pointer_cast<" << o->returnType << '>');
+    middle("(context_, " << o->single << ')');
   } else {
     middle("libbirch::check_cast<" << o->returnType << '>');
+    middle('(' << o->single << ')');
   }
-  middle('(' << o->single << ')');
 }
 
-void bi::CppBaseGenerator::visit(const Call* o) {
+void bi::CppBaseGenerator::visit(const Call<Unknown>* o) {
+  assert(false);
+}
+
+void bi::CppBaseGenerator::visit(const Call<Parameter>* o) {
   middle(o->single);
-  genArgs(o);
+  middle('(');
+  auto type = dynamic_cast<const FunctionType*>(o->target->type);
+  assert(type);
+  genArgs(o->args, type->params);
+  middle(')');
 }
 
-void bi::CppBaseGenerator::visit(const BinaryCall* o) {
+void bi::CppBaseGenerator::visit(const Call<LocalVariable>* o) {
+  middle(o->single);
+  middle('(');
+  auto type = dynamic_cast<const FunctionType*>(o->target->type);
+  assert(type);
+  genArgs(o->args, type->params);
+  middle(')');
+}
+
+void bi::CppBaseGenerator::visit(const Call<MemberVariable>* o) {
+  middle(o->single);
+  middle('(');
+  auto type = dynamic_cast<const FunctionType*>(o->target->type);
+  assert(type);
+  genArgs(o->args, type->params);
+  middle(')');
+}
+
+void bi::CppBaseGenerator::visit(const Call<GlobalVariable>* o) {
+  middle(o->single);
+  middle('(');
+  auto type = dynamic_cast<const FunctionType*>(o->target->type);
+  assert(type);
+  genArgs(o->args, type->params);
+  middle(')');
+}
+
+void bi::CppBaseGenerator::visit(const Call<Function>* o) {
+  middle(o->single);
+  middle('(');
+  if (!o->target->isValue()) {
+    middle("context_");
+    if (!o->args->isEmpty()) {
+      middle(", ");
+    }
+  }
+  genArgs(o->args, o->target->params->type);
+  middle(')');
+}
+
+void bi::CppBaseGenerator::visit(const Call<MemberFunction>* o) {
+  middle(o->single);
+  middle('(');
+  genArgs(o->args, o->target->params->type);
+  middle(')');
+}
+
+void bi::CppBaseGenerator::visit(const Call<Fiber>* o) {
+  middle(o->single);
+  middle('(');
+  if (!o->target->isValue()) {
+    middle("context_");
+    if (!o->args->isEmpty()) {
+      middle(", ");
+    }
+  }
+  genArgs(o->args, o->target->params->type);
+  middle(')');
+}
+
+void bi::CppBaseGenerator::visit(const Call<MemberFiber>* o) {
+  middle(o->single);
+  middle('(');
+  genArgs(o->args, o->target->params->type);
+  middle(')');
+}
+
+void bi::CppBaseGenerator::visit(const Call<BinaryOperator>* o) {
   auto op = dynamic_cast<OverloadedIdentifier<BinaryOperator>*>(o->single);
   assert(op);
-  if (isTranslatable(op->name->str())) {
-    /* can use corresponding C++ operator */
+  if (isTranslatable(op->name->str()) && o->target->isValue()) {
+    /* use corresponding C++ operator */
     genLeftArg(o);
     middle(' ' << op->name->str() << ' ');
     genRightArg(o);
   } else {
-    /* must use as function */
+    /* use function */
     middle(o->single << '(');
+    if (!o->target->isValue()) {
+      middle("context_, ");
+    }
     genLeftArg(o);
     middle(", ");
     genRightArg(o);
@@ -100,16 +206,19 @@ void bi::CppBaseGenerator::visit(const BinaryCall* o) {
   }
 }
 
-void bi::CppBaseGenerator::visit(const UnaryCall* o) {
+void bi::CppBaseGenerator::visit(const Call<UnaryOperator>* o) {
   auto op = dynamic_cast<OverloadedIdentifier<UnaryOperator>*>(o->single);
   assert(op);
-  if (isTranslatable(op->name->str())) {
-    /* can use corresponding C++ operator */
+  if (isTranslatable(op->name->str()) && o->target->isValue()) {
+    /* use corresponding C++ operator */
     middle(op->name->str());
     genSingleArg(o);
   } else {
-    /* must use as function */
+    /* use function */
     middle(o->single << '(');
+    if (!o->target->isValue()) {
+      middle("context_, ");
+    }
     genSingleArg(o);
     middle(')');
   }
@@ -139,27 +248,37 @@ void bi::CppBaseGenerator::visit(const Assign* o) {
      * context is set correctly */
     ++inAssign;
     middle(member->left << "->set_" << var->name << "_(");
-    if (slice) {
-      middle("libbirch::make_view(" << slice->brackets << "), ");
-    }
     --inAssign;
+    if (slice) {
+      middle("libbirch::make_slice(" << slice->brackets << "), ");
+    }
     middle(o->right << ')');
   } else {
-    ++inAssign;
-    middle(o->left);
-    --inAssign;
-    middle(" = " << o->right);
+    if (o->left->type->isValue()) {
+      ++inAssign;
+      middle(o->left << " = ");
+      --inAssign;
+      genArg(o->right, o->left->type);
+      //middle(o->right);
+    } else {
+      ++inAssign;
+      middle(o->left << ".assign(context_, ");
+      --inAssign;
+      genArg(o->right, o->left->type);
+      //middle(o->right);
+      middle(')');
+    }
   }
 }
 
 void bi::CppBaseGenerator::visit(const Slice* o) {
-  middle(o->single);
-  if (!inAssign && o->single->type->isValue()) {
-    /* optimization: just reading a value, so ensure that access is in a
-     * const context to avoid unnecessary copy */
-    middle(".as_const()");
+  middle(o->single << '.');
+  if (inAssign) {
+    middle("get");
+  } else {
+    middle("pull");
   }
-  middle("(libbirch::make_view(" << o->brackets << "))");
+  middle("(libbirch::make_slice(" << o->brackets << "))");
 }
 
 void bi::CppBaseGenerator::visit(const Query* o) {
@@ -222,7 +341,7 @@ void bi::CppBaseGenerator::visit(const Member* o) {
     if (!inAssign && rightVar && rightVar->type->isValue()) {
       /* optimization: just reading a value, so no need to copy-on-write the
        * owning object */
-      middle(".readOnly()");
+      middle(".pull()");
     }
     middle("->");
 
@@ -252,10 +371,9 @@ void bi::CppBaseGenerator::visit(const Nil* o) {
 }
 
 void bi::CppBaseGenerator::visit(const Parameter* o) {
+  middle("const " << o->type);
   if (o->type->isArray() || o->type->isClass()) {
-    middle("const " << o->type << '&');
-  } else {
-    middle(o->type);
+    middle('&');
   }
   middle(' ' << o->name);
   if (!o->value->isEmpty()) {
@@ -284,17 +402,25 @@ void bi::CppBaseGenerator::visit(const Identifier<MemberVariable>* o) {
 }
 
 void bi::CppBaseGenerator::visit(const OverloadedIdentifier<Function>* o) {
-  middle("bi::" << o->name);
-  if (!o->typeArgs->isEmpty()) {
-    middle('<' << o->typeArgs << ">::f");
+  auto name = internalise(o->name->str());
+  if (o->overload->isInstantiation()) {
+    std::stringstream base;
+    bih_ostream buf(base);
+    buf << o->overload->typeParams << '(' << o->overload->params->type << ')';
+    name += "_" + encode32(base.str()) + "_";
   }
+  middle("bi::" << name);
 }
 
 void bi::CppBaseGenerator::visit(const OverloadedIdentifier<Fiber>* o) {
-  middle("bi::" << o->name);
-  if (!o->typeArgs->isEmpty()) {
-    middle('<' << o->typeArgs << ">::f");
+  auto name = internalise(o->name->str());
+  if (o->overload->isInstantiation()) {
+    std::stringstream base;
+    bih_ostream buf(base);
+    buf << o->overload->typeParams << '(' << o->overload->params->type << ')';
+    name += "_" + encode32(base.str()) + "_";
   }
+  middle("bi::" << name);
 }
 
 void bi::CppBaseGenerator::visit(
@@ -337,6 +463,7 @@ void bi::CppBaseGenerator::visit(const GlobalVariable* o) {
   } else {
     finish(" {");
     in();
+    line("auto context_ [[maybe_unused]] = libbirch::rootContext;");
     start("static " << o->type << " result");
     genInit(o);
     finish(';');
@@ -359,82 +486,49 @@ void bi::CppBaseGenerator::visit(const MemberVariable* o) {
 }
 
 void bi::CppBaseGenerator::visit(const Function* o) {
-  if (!o->braces->isEmpty()) {
-    if (o->isGeneric()) {
-      /* generic functions are generated as a struct with a static member
-       * function, where the type parameters are part of the struct; this means
-       * we don't have to generate even a signature for the unbound function */
-      if (header) {
-        line("#if ENABLE_DEVICE");
-        line("#pragma omp declare target");
-        line("#endif");
-        genTemplateParams(o);
-        start("struct " << o->name);
-        if (o->isBound()) {
-          genTemplateArgs(o);
-        }
-        finish(" {");
-        in();
-        if (o->isBound()) {
-          start("static ");
-        } else {
-          line("//");
-        }
-      }
-      if (o->isBound()) {
-        if (!header) {
-          line("#if ENABLE_DEVICE");
-          line("#pragma omp declare target");
-          line("#endif");
-        }
-        middle(o->returnType << ' ');
-        if (!header) {
-          start("bi::" << o->name);
-          genTemplateArgs(o);
-          middle("::");
-        }
-        middle("f(" << o->params << ')');
-        if (header) {
-          finish(';');
-        }
-      }
-      if (header) {
-        out();
-        finish("};\n");
-        line("#if ENABLE_DEVICE");
-        line("#pragma omp end declare target");
-        line("#endif\n");
-      }
-    } else {
-      line("#if ENABLE_DEVICE");
-      line("#pragma omp declare target");
-      line("#endif");
-      start(o->returnType << ' ');
-      if (!header) {
-        middle("bi::");
-      }
-      middle(o->name << '(' << o->params << ')');
-      if (header) {
-        finish(';');
-        line("#if ENABLE_DEVICE");
-        line("#pragma omp end declare target");
-        line("#endif\n");
+  if (!o->braces->isEmpty() && o->isBound()) {
+    auto name = internalise(o->name->str());
+    if (o->isInstantiation()) {
+      std::stringstream base;
+      bih_ostream buf(base);
+      buf << o->typeParams << '(' << o->params->type << ')';
+      name += "_" + encode32(base.str()) + "_";
+    }
+    line("#if ENABLE_DEVICE");
+    line("#pragma omp declare target");
+    line("#endif");
+    start(o->returnType << ' ');
+    if (!header) {
+      middle("bi::");
+    }
+    middle(name << '(');
+    if (!o->isValue()) {
+      middle("libbirch::Label* context_");
+      if (!o->params->isEmpty()) {
+        middle(", ");
       }
     }
-
-    /* body */
-    if (!header && o->isBound()) {
+    middle(o->params << ')');
+    if (header) {
+      finish(';');
+    } else {
       finish(" {");
       in();
+      for (auto iter = o->typeParams->begin(); iter != o->typeParams->end();
+          ++iter) {
+        auto param = dynamic_cast<const Generic*>(*iter);
+        assert(param);
+        line("using " << param->name << " [[maybe_unused]] = " << param->type << ';');
+      }
       genTraceFunction(o->name->str(), o->loc);
       CppBaseGenerator aux(base, level, false);
       *this << o->braces->strip();
       out();
       line('}');
-      line("#if ENABLE_DEVICE");
-      line("#pragma omp end declare target");
-      line("#endif\n");
     }
+    line("#if ENABLE_DEVICE");
+    line("#pragma omp end declare target");
+    line("#endif\n");
   }
 
   for (auto instantiation : o->instantiations) {
@@ -447,7 +541,6 @@ void bi::CppBaseGenerator::visit(const Fiber* o) {
     CppFiberGenerator auxFiber(base, level, header);
     auxFiber << o;
   }
-
   for (auto instantiation : o->instantiations) {
     *this << instantiation;
   }
@@ -469,6 +562,9 @@ void bi::CppBaseGenerator::visit(const Program* o) {
     in();
     genTraceFunction(o->name->str(), o->loc);
 
+    /* initial context */
+    line("auto context_ [[maybe_unused]] = libbirch::rootContext;");
+
     /* handle program options */
     if (o->params->width() > 0) {
       /* option variables */
@@ -479,8 +575,7 @@ void bi::CppBaseGenerator::visit(const Program* o) {
         if (!param->value->isEmpty()) {
           middle(" = " << param->value);
         } else if (param->type->isClass()) {
-          ++inPointer;
-          middle(" = libbirch::make_object<" << param->type << ">()");
+          middle(" = libbirch::make_pointer<" << param->type << ">(context_)");
         }
         finish(';');
       }
@@ -578,12 +673,11 @@ void bi::CppBaseGenerator::visit(const BinaryOperator* o) {
     if (!header) {
       middle("bi::");
     }
-    if (isTranslatable(o->name->str())) {
-      middle("operator" << o->name->str());
+    if (isTranslatable(o->name->str()) && o->isValue()) {
+      middle("operator" << o->name->str() << '(');
     } else {
-      middle(o->name);
+      middle(o->name << "(libbirch::Label* context_, ");
     }
-    middle('(');
     middle(o->params->getLeft() << ", " << o->params->getRight());
     middle(')');
     if (header) {
@@ -606,12 +700,12 @@ void bi::CppBaseGenerator::visit(const UnaryOperator* o) {
     if (!header) {
       middle("bi::");
     }
-    if (isTranslatable(o->name->str())) {
-      middle("operator" << o->name->str());
+    if (isTranslatable(o->name->str()) && o->isValue()) {
+      middle("operator" << o->name->str() << '(');
     } else {
-      middle(o->name);
+      middle(o->name << "(libbirch::Label* context_, ");
     }
-    middle('(' << o->params << ')');
+    middle(o->params << ')');
     if (header) {
       finish(';');
     } else {
@@ -635,9 +729,7 @@ void bi::CppBaseGenerator::visit(const ConversionOperator* o) {
 }
 
 void bi::CppBaseGenerator::visit(const Basic* o) {
-  if (header && o->isAlias()) {
-    line("using " << o->name << " = " << o->base << ';');
-  }
+  //
 }
 
 void bi::CppBaseGenerator::visit(const Class* o) {
@@ -707,7 +799,6 @@ void bi::CppBaseGenerator::visit(const For* o) {
   /* o->index may be an identifier or a local variable, in the latter case
    * need to ensure that it is only declared once in the first element of the
    * for loop */
-  ++inAssign;
   auto param = dynamic_cast<LocalVariable*>(o->index);
   if (param) {
     Identifier<LocalVariable> ref(param->name, param->loc, param);
@@ -719,7 +810,6 @@ void bi::CppBaseGenerator::visit(const For* o) {
     middle(o->index << " <= " << o->to << "; ");
     finish("++" << o->index << ") {");
   }
-  --inAssign;
   in();
   *this << o->braces->strip();
   out();
@@ -789,8 +879,9 @@ void bi::CppBaseGenerator::visit(const ArrayType* o) {
 }
 
 void bi::CppBaseGenerator::visit(const TupleType* o) {
-  middle("std::tuple<" << o->single << '>');
+  middle("libbirch::Tuple<" << o->single << '>');
 }
+
 void bi::CppBaseGenerator::visit(const FunctionType* o) {
   middle("std::function<" << o->returnType << '(' << o->params << ")>");
 }
@@ -803,29 +894,17 @@ void bi::CppBaseGenerator::visit(const OptionalType* o) {
   middle("libbirch::Optional<" << o->single << '>');
 }
 
-void bi::CppBaseGenerator::visit(const WeakType* o) {
-  middle("libbirch::Weak<");
-  if (o->single->isClass()) {
-    ++inPointer;
-  }
-  middle(o->single);
-  middle('>');
-}
-
 void bi::CppBaseGenerator::visit(const ClassType* o) {
-  int inPointer1 = inPointer;
-  if (!inPointer1) {
-    middle("libbirch::Shared<");
+  if (o->weak) {
+    middle("libbirch::LazyWeakPtr<");
   } else {
-    --inPointer;
+    middle("libbirch::LazySharedPtr<");
   }
   middle("bi::type::" << o->name);
   if (!o->typeArgs->isEmpty()) {
     middle('<' << o->typeArgs << '>');
   }
-  if (!inPointer1) {
-    middle('>');
-  }
+  middle('>');
 }
 
 void bi::CppBaseGenerator::visit(const BasicType* o) {
@@ -862,33 +941,31 @@ void bi::CppBaseGenerator::genTraceLine(const int line) {
   line("libbirch_line_(" << line << ");");
 }
 
-void bi::CppBaseGenerator::genArgs(const Call* o) {
-  middle('(');
-  auto iter1 = o->args->begin();
-  auto end1 = o->args->end();
-  auto iter2 = o->callType->params->begin();
-  auto end2 = o->callType->params->end();
+void bi::CppBaseGenerator::genArgs(const Expression* args, const Type* types) {
+  auto iter1 = args->begin();
+  auto end1 = args->end();
+  auto iter2 = types->begin();
+  auto end2 = types->end();
   while (iter1 != end1 && iter2 != end2) {
-    if (iter1 != o->args->begin()) {
+    if (iter1 != args->begin()) {
       middle(", ");
     }
     genArg(*iter1, *iter2);
     ++iter1;
     ++iter2;
   }
-  middle(')');
 }
 
-void bi::CppBaseGenerator::genLeftArg(const BinaryCall* o) {
-  genArg(o->args->getLeft(), o->callType->params->getLeft());
+void bi::CppBaseGenerator::genLeftArg(const Call<BinaryOperator>* o) {
+  genArg(o->args->getLeft(), o->target->params->getLeft()->type);
 }
 
-void bi::CppBaseGenerator::genRightArg(const BinaryCall* o) {
-  genArg(o->args->getRight(), o->callType->params->getRight());
+void bi::CppBaseGenerator::genRightArg(const Call<BinaryOperator>* o) {
+  genArg(o->args->getRight(), o->target->params->getRight()->type);
 }
 
-void bi::CppBaseGenerator::genSingleArg(const UnaryCall* o) {
-  genArg(o->args, o->callType->params);
+void bi::CppBaseGenerator::genSingleArg(const Call<UnaryOperator>* o) {
+  genArg(o->args, o->target->params->type);
 }
 
 void bi::CppBaseGenerator::genArg(const Expression* arg, const Type* type) {
@@ -898,9 +975,14 @@ void bi::CppBaseGenerator::genArg(const Expression* arg, const Type* type) {
   auto isThis = dynamic_cast<const This*>(arg);
   auto isSuper = dynamic_cast<const Super*>(arg);
   auto isSequence = dynamic_cast<const Sequence*>(arg);
-  if (!arg->type->equals(*type) || isThis || isSuper || isSequence) {
-    middle(type->canonical() << '(' << arg << ')');
+  if ((!arg->type->equals(*type) && arg->type->isConvertible(*type)) || isThis || isSuper || isSequence) {
+    middle(type->canonical() << '(');
+    if (!type->isValue()) {
+      middle("context_, ");
+    }
+    middle(arg << ')');
   } else {
+    /* either the same type, or using an assignment operator overload */
     middle(arg);
   }
 }

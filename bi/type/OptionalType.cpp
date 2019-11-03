@@ -27,10 +27,6 @@ void bi::OptionalType::accept(Visitor* visitor) const {
   return visitor->visit(this);
 }
 
-bool bi::OptionalType::isValue() const {
-  return single->isValue();
-}
-
 bool bi::OptionalType::isOptional() const {
   return true;
 }
@@ -60,10 +56,6 @@ bool bi::OptionalType::isConvertible(const OptionalType& o) const {
   return single->isConvertible(*o.single);
 }
 
-bool bi::OptionalType::isConvertible(const WeakType& o) const {
-  return single->isConvertible(*o.single);
-}
-
 bool bi::OptionalType::dispatchIsAssignable(const Type& o) const {
   return o.isAssignable(*this);
 }
@@ -82,10 +74,6 @@ bool bi::OptionalType::isAssignable(const MemberType& o) const {
 }
 
 bool bi::OptionalType::isAssignable(const OptionalType& o) const {
-  return single->isAssignable(*o.single);
-}
-
-bool bi::OptionalType::isAssignable(const WeakType& o) const {
   return single->isAssignable(*o.single);
 }
 
@@ -162,15 +150,6 @@ bi::Type* bi::OptionalType::common(const NilType& o) const {
 
 bi::Type* bi::OptionalType::common(const OptionalType& o) const {
   auto single1 = single->common(*o.single);
-  if (single1) {
-    return new OptionalType(single1);
-  } else {
-    return nullptr;
-  }
-}
-
-bi::Type* bi::OptionalType::common(const WeakType& o) const {
-  auto single1 = single->common(o);
   if (single1) {
     return new OptionalType(single1);
   } else {

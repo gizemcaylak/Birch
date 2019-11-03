@@ -1,4 +1,4 @@
-/* A Bison parser, made by GNU Bison 3.3.2.  */
+/* A Bison parser, made by GNU Bison 3.4.2.  */
 
 /* Skeleton interface for Bison GLR parsers in C
 
@@ -40,12 +40,12 @@
 extern int yydebug;
 #endif
 /* "%code requires" blocks.  */
-#line 1 "bi/parser.ypp" /* glr.c:197  */
+#line 1 "bi/parser.ypp"
 
   #include "bi/lexer.hpp"
   #include "bi/build/Compiler.hpp"
 
-#line 49 "bi/parser.hpp" /* glr.c:197  */
+#line 49 "bi/parser.hpp"
 
 /* Token type.  */
 #ifndef YYTOKENTYPE
@@ -77,35 +77,35 @@ extern int yydebug;
     PARALLEL = 280,
     DYNAMIC = 281,
     FINAL = 282,
-    NIL = 283,
-    DOUBLE_BRACE_OPEN = 284,
-    DOUBLE_BRACE_CLOSE = 285,
-    NAME = 286,
-    BOOL_LITERAL = 287,
-    INT_LITERAL = 288,
-    REAL_LITERAL = 289,
-    STRING_LITERAL = 290,
-    LEFT_OP = 291,
-    RIGHT_OP = 292,
-    LEFT_TILDE_OP = 293,
-    RIGHT_TILDE_OP = 294,
-    LEFT_QUERY_OP = 295,
-    AND_OP = 296,
-    OR_OP = 297,
-    LE_OP = 298,
-    GE_OP = 299,
-    EQ_OP = 300,
-    NE_OP = 301,
-    RANGE_OP = 302
+    ABSTRACT = 283,
+    NIL = 284,
+    DOUBLE_BRACE_OPEN = 285,
+    DOUBLE_BRACE_CLOSE = 286,
+    NAME = 287,
+    BOOL_LITERAL = 288,
+    INT_LITERAL = 289,
+    REAL_LITERAL = 290,
+    STRING_LITERAL = 291,
+    LEFT_OP = 292,
+    RIGHT_OP = 293,
+    LEFT_TILDE_OP = 294,
+    RIGHT_TILDE_OP = 295,
+    LEFT_QUERY_OP = 296,
+    AND_OP = 297,
+    OR_OP = 298,
+    LE_OP = 299,
+    GE_OP = 300,
+    EQ_OP = 301,
+    NE_OP = 302,
+    RANGE_OP = 303
   };
 #endif
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
-
 union YYSTYPE
 {
-#line 71 "bi/parser.ypp" /* glr.c:197  */
+#line 71 "bi/parser.ypp"
 
   bool valBool;
   int32_t valInt;
@@ -118,9 +118,9 @@ union YYSTYPE
   bi::Type* valType;
   bi::Statement* valStatement;
 
-#line 122 "bi/parser.hpp" /* glr.c:197  */
-};
+#line 122 "bi/parser.hpp"
 
+};
 typedef union YYSTYPE YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define YYSTYPE_IS_DECLARED 1

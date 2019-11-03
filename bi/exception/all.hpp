@@ -3,6 +3,7 @@
  */
 #pragma once
 
+#include "bi/exception/AbstractBodyException.hpp"
 #include "bi/exception/AmbiguousCallException.hpp"
 #include "bi/exception/AssignmentException.hpp"
 #include "bi/exception/AssumeException.hpp"

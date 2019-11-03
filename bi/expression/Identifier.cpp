@@ -26,14 +26,22 @@ bool bi::Identifier<ObjectType>::isAssignable() const {
 }
 
 template<class ObjectType>
-bi::FunctionType* bi::Identifier<ObjectType>::resolve(Argumented* o) {
+bi::Lookup bi::Identifier<ObjectType>::lookup(Expression* args) {
+  return lookup_result<ObjectType>::value;
+}
+
+template<class ObjectType>
+ObjectType* bi::Identifier<ObjectType>::resolve(Call<ObjectType>* o) {
   if (type->isFunction()) {
-    auto result = dynamic_cast<FunctionType*>(type);
-    assert(result);
-    return result;
+    auto functionType = dynamic_cast<FunctionType*>(type);
+    assert(functionType);
+    if (!o->args->type->isConvertible(*functionType->params)) {
+      throw CallException(o, this->target);
+    }
   } else {
     throw NotFunctionException(this);
   }
+  return this->target;
 }
 
 template<class ObjectType>

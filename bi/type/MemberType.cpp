@@ -27,10 +27,6 @@ void bi::MemberType::accept(Visitor* visitor) const {
   return visitor->visit(this);
 }
 
-bool bi::MemberType::isValue() const {
-  return right->isValue();
-}
-
 bool bi::MemberType::isBasic() const {
   return right->isBasic();
 }
@@ -131,10 +127,6 @@ bool bi::MemberType::isConvertible(const OptionalType& o) const {
   return right->isConvertible(o);
 }
 
-bool bi::MemberType::isConvertible(const WeakType& o) const {
-  return right->isConvertible(o);
-}
-
 bool bi::MemberType::isConvertible(const TupleType& o) const {
   return right->isConvertible(o);
 }
@@ -183,10 +175,6 @@ bool bi::MemberType::isAssignable(const OptionalType& o) const {
   return right->isAssignable(o);
 }
 
-bool bi::MemberType::isAssignable(const WeakType& o) const {
-  return right->isAssignable(o);
-}
-
 bool bi::MemberType::isAssignable(const TupleType& o) const {
   return right->isAssignable(o);
 }
@@ -232,10 +220,6 @@ bi::Type* bi::MemberType::common(const MemberType& o) const {
 }
 
 bi::Type* bi::MemberType::common(const OptionalType& o) const {
-  return right->common(o);
-}
-
-bi::Type* bi::MemberType::common(const WeakType& o) const {
   return right->common(o);
 }
 

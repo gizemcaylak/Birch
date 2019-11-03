@@ -53,11 +53,6 @@ public:
   void clean();
 
   /**
-   * Performance-tune the package.
-   */
-  void tune();
-
-  /**
    * Create a new package.
    */
   void init();
@@ -242,11 +237,6 @@ private:
    * Is lazy deep clone enabled?
    */
   bool lazyDeepClone;
-
-  /**
-   * Is the read-only optimization, for lazy deep clone, enabled?
-   */
-  bool readOnlyOptimization;
 
   /**
    * Is the single-reference optimization, for lazy deep clone, enabled?

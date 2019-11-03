@@ -36,6 +36,11 @@ protected:
    */
   std::string getName(const std::string& name, const int number);
 
+  /**
+   * The yield type of the fiber being generated.
+   */
+  const Type* yieldType;
+
   /*
    * Gatherers for important objects.
    */
@@ -60,9 +65,9 @@ protected:
   std::map<std::string,int> counts;
 
   /**
-   * Current label.
+   * Current yield point.
    */
-  int label;
+  int point;
 
   /**
    * Are we in a for loop?

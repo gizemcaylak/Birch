@@ -25,7 +25,6 @@ class GenericType;
 class MemberType;
 class NilType;
 class OptionalType;
-class WeakType;
 class TupleType;
 class TypeConstIterator;
 class UnknownType;
@@ -79,14 +78,14 @@ public:
   virtual void accept(Visitor* visitor) const = 0;
 
   /**
+   * Is this a value type? Such a type contains no usage of class types.
+   */
+  bool isValue() const;
+
+  /**
    * Is this an empty type?
    */
   virtual bool isEmpty() const;
-
-  /**
-   * Is this a value type?
-   */
-  virtual bool isValue() const;
 
   /**
    * Is this a basic type?
@@ -245,7 +244,6 @@ public:
   virtual bool isConvertible(const MemberType& o) const;
   virtual bool isConvertible(const NilType& o) const;
   virtual bool isConvertible(const OptionalType& o) const;
-  virtual bool isConvertible(const WeakType& o) const;
   virtual bool isConvertible(const TupleType& o) const;
   virtual bool isConvertible(const UnknownType& o) const;
   virtual bool isConvertible(const TypeList& o) const;
@@ -266,7 +264,6 @@ public:
   virtual bool isAssignable(const MemberType& o) const;
   virtual bool isAssignable(const NilType& o) const;
   virtual bool isAssignable(const OptionalType& o) const;
-  virtual bool isAssignable(const WeakType& o) const;
   virtual bool isAssignable(const TupleType& o) const;
   virtual bool isAssignable(const UnknownType& o) const;
   virtual bool isAssignable(const TypeList& o) const;
@@ -287,7 +284,6 @@ public:
   virtual Type* common(const MemberType& o) const;
   virtual Type* common(const NilType& o) const;
   virtual Type* common(const OptionalType& o) const;
-  virtual Type* common(const WeakType& o) const;
   virtual Type* common(const TupleType& o) const;
   virtual Type* common(const UnknownType& o) const;
   virtual Type* common(const TypeList& o) const;

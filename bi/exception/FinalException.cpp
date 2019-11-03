@@ -11,7 +11,7 @@ bi::FinalException::FinalException(const Class* o) {
   if (o->loc) {
     buf << o->loc;
   }
-  buf << "error: cannot inherit from a class with final qualifier\n";
+  buf << "error: cannot inherit from a class marked final\n";
   if (o->loc) {
     buf << o->loc;
   }

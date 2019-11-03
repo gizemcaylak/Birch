@@ -35,7 +35,6 @@ bi::Driver::Driver(int argc, char** argv) :
     verbose(true),
     memoryPool(true),
     lazyDeepClone(true),
-    readOnlyOptimization(true),
     singleReferenceOptimization(true),
     cloneMemoInitialSize(16),
     newAutogen(false),
@@ -105,8 +104,6 @@ bi::Driver::Driver(int argc, char** argv) :
       { "disable-memory-pool", no_argument, 0, DISABLE_MEMORY_POOL_ARG },
       { "enable-lazy-deep-clone", no_argument, 0, ENABLE_LAZY_DEEP_CLONE_ARG },
       { "disable-lazy-deep-clone", no_argument, 0, DISABLE_LAZY_DEEP_CLONE_ARG },
-      { "enable-read-only-optimization", no_argument, 0, ENABLE_READ_ONLY_OPTIMIZATION_ARG },
-      { "disable-read-only-optimization", no_argument, 0, DISABLE_READ_ONLY_OPTIMIZATION_ARG },
       { "enable-single-reference-optimization", no_argument, 0, ENABLE_SINGLE_REFERENCE_OPTIMIZATION_ARG },
       { "disable-single-reference-optimization", no_argument, 0, DISABLE_SINGLE_REFERENCE_OPTIMIZATION_ARG },
       { "clone-memo-initial-size", required_argument, 0, CLONE_MEMO_INITIAL_SIZE_ARG },
@@ -203,12 +200,6 @@ bi::Driver::Driver(int argc, char** argv) :
       break;
     case DISABLE_LAZY_DEEP_CLONE_ARG:
       lazyDeepClone = false;
-      break;
-    case ENABLE_READ_ONLY_OPTIMIZATION_ARG:
-      readOnlyOptimization = true;
-      break;
-    case DISABLE_READ_ONLY_OPTIMIZATION_ARG:
-      readOnlyOptimization = false;
       break;
     case ENABLE_SINGLE_REFERENCE_OPTIMIZATION_ARG:
       singleReferenceOptimization = true;
@@ -1160,8 +1151,8 @@ void bi::Driver::configure() {
       cxxflags << " -Wall";
     }
     if (debug) {
-      cflags << " -Og -fno-inline -g";
-      cxxflags << " -Og -fno-inline -g";
+      cflags << " -O0 -fno-inline -g";
+      cxxflags << " -O0 -fno-inline -g";
     } else {
       cppflags << " -DNDEBUG";
       cflags << " -O3 -g";

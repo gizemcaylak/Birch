@@ -15,6 +15,8 @@ bi::CppMemberFiberGenerator::CppMemberFiberGenerator(const Class* type,
 }
 
 void bi::CppMemberFiberGenerator::visit(const MemberFiber* o) {
+  yieldType = o->returnType->unwrap();
+
   /* generate a unique name (within this scope) for the state of the fiber */
   std::stringstream base;
   bih_ostream buf(base);
@@ -30,12 +32,12 @@ void bi::CppMemberFiberGenerator::visit(const MemberFiber* o) {
   /* supporting class for state */
   if (header) {
     start("class " << stateName << " final : ");
-    finish("public libbirch::FiberState<" << o->returnType->unwrap() << "> {");
+    finish("public libbirch::FiberState<" << yieldType << "> {");
     line("public:");
     in();
     line("using class_type_ = " << stateName << ';');
-    line("using super_type_ = libbirch::FiberState<" << o->returnType->unwrap() << ">;\n");
-    start("libbirch::Shared<bi::type::" << type->name);
+    line("using super_type_ = libbirch::FiberState<" << yieldType << ">;\n");
+    start("libbirch::LazySharedPtr<bi::type::" << type->name);
     genTemplateArgs(type);
     finish("> self;");
     for (auto param : params) {
@@ -47,13 +49,6 @@ void bi::CppMemberFiberGenerator::visit(const MemberFiber* o) {
     }
   }
 
-  /* self-reference function */
-  if (header) {
-    out();
-    line("protected:");
-    in();
-  }
-
   /* constructor */
   start("");
   if (!header) {
@@ -61,7 +56,7 @@ void bi::CppMemberFiberGenerator::visit(const MemberFiber* o) {
     genTemplateArgs(type);
     middle("::" << stateName << "::");
   }
-  middle(stateName << "(const libbirch::Shared<");
+  middle(stateName << "(libbirch::Label* context_, const libbirch::LazySharedPtr<");
   middle(type->name);
   genTemplateArgs(type);
   middle(">& self");
@@ -75,12 +70,16 @@ void bi::CppMemberFiberGenerator::visit(const MemberFiber* o) {
     finish(" :");
     in();
     in();
-    start("super_type_(0, " << (yields.size() + 1) << ')');
+    start("super_type_(context_, " << (yields.size() + 1) << ')');
     finish(',');
-    start("self(self)");
+    start("self(context_, self)");
     for (auto param : params) {
       finish(',');
-      start(param->name << '(' << param->name << ')');
+      start(param->name << '(');
+      if (!param->type->isValue()) {
+        middle("context_, ");
+      }
+      middle(param->name << ')');
     }
     finish(" {");
     out();
@@ -89,25 +88,77 @@ void bi::CppMemberFiberGenerator::visit(const MemberFiber* o) {
     line("}\n");
   }
 
+  line("// LCOV_EXCL_START");
+
+  /* deep copy constructor */
+  if (!header) {
+    middle("bi::type::" << type->name);
+    genTemplateArgs(type);
+    middle("::" << stateName << "::");
+  } else {
+    start("");
+  }
+  middle(stateName << "(libbirch::Label* context, libbirch::Label* label, const " << stateName << "& o)");
+  if (header) {
+    finish(";\n");
+  } else {
+    finish(" :");
+    in();
+    in();
+    start("super_type_(context, label, o)");
+    finish(',');
+    start("self(context, label, o.self)");
+    for (auto o : params) {
+      if (!o->type->isValue()) {
+        finish(',');
+        if (o->type->isValue()) {
+          start(o->name << "(o." << o->name << ')');
+        } else {
+          start(o->name << "(context, label, o." << o->name << ')');
+        }
+      }
+    }
+    for (auto o : locals) {
+      auto name = getName(o->name->str(), o->number);
+      finish(',');
+      if (o->type->isValue()) {
+        start(name << "(o." << name << ')');
+      } else {
+        start(name << "(context, label, o." << name << ')');
+      }
+    }
+    out();
+    out();
+    finish(" {");
+    in();
+    line("//");
+    out();
+    line("}\n");
+  }
+
   /* copy constructor, destructor, assignment operator */
   if (header) {
-    line(stateName << "(const " << stateName << "&) = default;");
     line("virtual ~" << stateName << "() = default;");
-    line(stateName << "& operator=(const " << stateName << "&) = default;");
+    line(stateName << "(const " << stateName << "&) = delete;");
+    line(stateName << "& operator=(const " << stateName << "&) = delete;");
   }
 
+  /* clone function */
   if (header) {
-    out();
-    line("public:");
+    line("virtual " << stateName << "* clone_(libbirch::Label* context_) const {");
     in();
+    line("return libbirch::clone_object<" << stateName << ">(context_, this);");
+    out();
+    line("}\n");
   }
 
-  /* standard functions */
+  /* name function */
   if (header) {
-    line("libbirch_create_function_");
-    line("libbirch_emplace_function_");
-    line("libbirch_clone_function_");
-    line("libbirch_destroy_function_");
+    line("virtual const char* name_() const {");
+    in();
+    line("return \"" << stateName << "\";");
+    out();
+    line("}\n");
   }
 
   /* freeze function */
@@ -126,13 +177,19 @@ void bi::CppMemberFiberGenerator::visit(const MemberFiber* o) {
     finish(" {");
     in();
     line("super_type_::doFreeze_();");
-    line("libbirch::freeze(self);");
-    line("libbirch::freeze(value_);");
-    for (auto param : params) {
-      line("libbirch::freeze(" << param->name << ");");
+    line("self.freeze();");
+    if (!o->returnType->unwrap()->isValue()) {
+      line("value_.freeze();");
     }
-    for (auto local : locals) {
-      line("libbirch::freeze(" << getName(local->name->str(), local->number) << ");");
+    for (auto o : params) {
+      if (!o->type->isValue()) {
+        line(o->name << ".freeze();");
+      }
+    }
+    for (auto o : locals) {
+      if (!o->type->isValue()) {
+        line(getName(o->name->str(), o->number) << ".freeze();");
+      }
     }
     out();
     line("}\n");
@@ -146,20 +203,26 @@ void bi::CppMemberFiberGenerator::visit(const MemberFiber* o) {
     genTemplateArgs(type);
     middle("::" << stateName << "::");
   }
-  middle("doThaw_(libbirch::LazyContext* context)");
+  middle("doThaw_(libbirch::Label* label_)");
   if (header) {
     finish(';');
   } else {
     finish(" {");
     in();
-    line("super_type_::doThaw_(context);");
-    line("libbirch::thaw(self, context);");
-    line("libbirch::thaw(value_, context);");
-    for (auto param : params) {
-      line("libbirch::thaw(" << param->name << ", context);");
+    line("super_type_::doThaw_(label_);");
+    line("self.thaw(label_);");
+    if (!o->returnType->unwrap()->isValue()) {
+      line("value_.thaw(label_);");
     }
-    for (auto local : locals) {
-      line("libbirch::thaw(" << getName(local->name->str(), local->number) << ", context);");
+    for (auto o : params) {
+      if (!o->type->isValue()) {
+        line(o->name << ".thaw(label_);");
+      }
+    }
+    for (auto o : locals) {
+      if (!o->type->isValue()) {
+        line(getName(o->name->str(), o->number) << ".thaw(label_);");
+      }
     }
     out();
     line("}\n");
@@ -180,18 +243,26 @@ void bi::CppMemberFiberGenerator::visit(const MemberFiber* o) {
     finish(" {");
     in();
     line("super_type_::doFinish_();");
-    line("libbirch::finish(self);");
-    line("libbirch::finish(value_);");
-    for (auto param : params) {
-      line("libbirch::finish(" << param->name << ");");
+    line("self.finish();");
+    if (!o->returnType->unwrap()->isValue()) {
+      line("value_.finish();");
     }
-    for (auto local : locals) {
-      line("libbirch::finish(" << getName(local->name->str(), local->number) << ");");
+    for (auto o : params) {
+      if (!o->type->isValue()) {
+        line(o->name << ".finish();");
+      }
+    }
+    for (auto o : locals) {
+      if (!o->type->isValue()) {
+        line(getName(o->name->str(), o->number) << ".finish();");
+      }
     }
     out();
     line("}");
   }
   line("#endif\n");
+
+  line("// LCOV_EXCL_STOP");
 
   /* query function */
   if (header) {
@@ -221,6 +292,7 @@ void bi::CppMemberFiberGenerator::visit(const MemberFiber* o) {
     finish("}\n");
   }
   if (header) {
+    out();
     line("};\n");
   }
 
@@ -238,17 +310,20 @@ void bi::CppMemberFiberGenerator::visit(const MemberFiber* o) {
   }
   middle(o->name << '(' << o->params << ')');
   if (header) {
+    if (o->has(FINAL)) {
+      middle(" final");
+    } else if (o->has(ABSTRACT)) {
+      middle(" = 0");
+    }
     finish(';');
   } else {
     finish(" {");
     in();
     line("libbirch_swap_context_");
     line("libbirch_declare_self_");
-    start("return libbirch::make_fiber<" << stateName << ">(");
-    middle("self");
+    start("return libbirch::make_fiber<" << stateName << ">(context_, self");
     for (auto param: params) {
-      middle(", ");
-      middle(param->name);
+      middle(", " << param->name);
     }
     finish(");");
     out();

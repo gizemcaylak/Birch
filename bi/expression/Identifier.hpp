@@ -46,7 +46,8 @@ public:
 
   virtual bool isAssignable() const;
 
-  virtual FunctionType* resolve(Argumented* o);
+  virtual Lookup lookup(Expression* args);
+  virtual ObjectType* resolve(Call<ObjectType>* o);
 
   virtual Expression* accept(Cloner* visitor) const;
   virtual Expression* accept(Modifier* visitor);

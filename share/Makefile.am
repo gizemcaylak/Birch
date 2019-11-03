@@ -18,7 +18,7 @@ CUDA_CXXFLAGS = -fopenmp-targets=nvptx64-nvidia-cuda -Xopenmp-target -march=sm_7
 
 AM_CPPFLAGS = -DEIGEN_NO_STATIC_ASSERT -DEIGEN_NO_AUTOMATIC_RESIZING=1 -DEIGEN_DONT_PARALLELIZE=1 -DEIGEN_NO_CPUID=1 -DEIGEN_DONT_VECTORIZE=1
 # -Deigen_assert=bi_assert
-AM_CXXFLAGS = -include bi/PACKAGE_TARNAME.hpp $(OPENMP_CXXFLAGS) $(CUDA_CXXFLAGS) -Wno-unknown-warning-option -Wno-overloaded-virtual -Wno-inconsistent-missing-override -Wno-return-type -Wno-defaulted-function-deleted
+AM_CXXFLAGS = -include bi/PACKAGE_TARNAME.hpp $(OPENMP_CXXFLAGS) $(CUDA_CXXFLAGS) -Wno-overloaded-virtual -Wno-inconsistent-missing-override -Wno-attributes -Wno-int-to-pointer-cast -Wno-unused-parameter -Wno-unused-variable -Wno-unused-value -Wno-unused-local-typedefs -Wno-unknown-pragmas
 AM_CFLAGS = $(OPENMP_CFLAGS)
 AM_LDFLAGS =
 

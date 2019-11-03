@@ -32,21 +32,21 @@ void bi::bi_ostream::visit(const Package* o) {
   }
   for (auto o : headerClasses) {
     for (auto instantiation : o->instantiations) {
-      if (!instantiation->has(PRIOR_INSTANTIATION)) {
+      if (!instantiation->has(INSTANTIATED)) {
         *this << instantiation;
       }
     }
   }
   for (auto o : headerFunctions) {
     for (auto instantiation : o->instantiations) {
-      if (!instantiation->has(PRIOR_INSTANTIATION)) {
+      if (!instantiation->has(INSTANTIATED)) {
         *this << instantiation;
       }
     }
   }
   for (auto o : headerFibers) {
     for (auto instantiation : o->instantiations) {
-      if (!instantiation->has(PRIOR_INSTANTIATION)) {
+      if (!instantiation->has(INSTANTIATED)) {
         *this << instantiation;
       }
     }
@@ -89,16 +89,48 @@ void bi::bi_ostream::visit(const Cast* o) {
   middle(o->returnType << '?' << '(' << o->single << ')');
 }
 
-void bi::bi_ostream::visit(const Call* o) {
+void bi::bi_ostream::visit(const Call<Unknown>* o) {
   middle(o->single << '(' << o->args << ')');
 }
 
-void bi::bi_ostream::visit(const BinaryCall* o) {
+void bi::bi_ostream::visit(const Call<Function>* o) {
+  middle(o->single << '(' << o->args << ')');
+}
+
+void bi::bi_ostream::visit(const Call<MemberFunction>* o) {
+  middle(o->single << '(' << o->args << ')');
+}
+
+void bi::bi_ostream::visit(const Call<Fiber>* o) {
+  middle(o->single << '(' << o->args << ')');
+}
+
+void bi::bi_ostream::visit(const Call<MemberFiber>* o) {
+  middle(o->single << '(' << o->args << ')');
+}
+
+void bi::bi_ostream::visit(const Call<Parameter>* o) {
+  middle(o->single << '(' << o->args << ')');
+}
+
+void bi::bi_ostream::visit(const Call<LocalVariable>* o) {
+  middle(o->single << '(' << o->args << ')');
+}
+
+void bi::bi_ostream::visit(const Call<MemberVariable>* o) {
+  middle(o->single << '(' << o->args << ')');
+}
+
+void bi::bi_ostream::visit(const Call<GlobalVariable>* o) {
+  middle(o->single << '(' << o->args << ')');
+}
+
+void bi::bi_ostream::visit(const Call<BinaryOperator>* o) {
   middle(
       o->args->getLeft() << ' ' << o->single << ' ' << o->args->getRight());
 }
 
-void bi::bi_ostream::visit(const UnaryCall* o) {
+void bi::bi_ostream::visit(const Call<UnaryOperator>* o) {
   middle(o->single << o->args);
 }
 
@@ -326,7 +358,7 @@ void bi::bi_ostream::visit(const Assume* o) {
 }
 
 void bi::bi_ostream::visit(const Function* o) {
-  if (o->isInstantiation() && !o->has(PRIOR_INSTANTIATION)) {
+  if (o->isInstantiation() && !o->has(INSTANTIATED)) {
     line("instantiated function " << o->name << '<' << o->typeParams << ">;");
   } else {
     start("function " << o->name);
@@ -349,7 +381,7 @@ void bi::bi_ostream::visit(const Function* o) {
 }
 
 void bi::bi_ostream::visit(const Fiber* o) {
-  if (o->isInstantiation() && !o->has(PRIOR_INSTANTIATION)) {
+  if (o->isInstantiation() && !o->has(INSTANTIATED)) {
     line("instantiated fiber " << o->name << '<' << o->typeParams << ">;");
   } else {
     start("fiber " << o->name);
@@ -381,6 +413,12 @@ void bi::bi_ostream::visit(const Program* o) {
 }
 
 void bi::bi_ostream::visit(const MemberFunction* o) {
+  if (o->has(ABSTRACT)) {
+    middle("abstract ");
+  }
+  if (o->has(FINAL)) {
+    middle("final ");
+  }
   start("function " << o->name << '(' << o->params << ')');
   if (!o->returnType->isEmpty()) {
     middle(" -> " << o->returnType);
@@ -393,6 +431,12 @@ void bi::bi_ostream::visit(const MemberFunction* o) {
 }
 
 void bi::bi_ostream::visit(const MemberFiber* o) {
+  if (o->has(ABSTRACT)) {
+    middle("abstract ");
+  }
+  if (o->has(FINAL)) {
+    middle("final ");
+  }
   start("fiber " << o->name << '(' << o->params << ')');
   if (!o->returnType->unwrap()->isEmpty()) {
     middle(" -> " << o->returnType->unwrap());
@@ -451,10 +495,16 @@ void bi::bi_ostream::visit(const ConversionOperator* o) {
 }
 
 void bi::bi_ostream::visit(const Class* o) {
-  if (o->isInstantiation() && !o->has(PRIOR_INSTANTIATION)) {
+  if (o->isInstantiation() && !o->has(INSTANTIATED)) {
     line("instantiated class " << o->name << '<' << o->typeParams << ">;");
   } else {
     type = o;
+    if (o->has(ABSTRACT)) {
+      middle("abstract ");
+    }
+    if (o->has(FINAL)) {
+      middle("final ");
+    }
     start("class " << o->name);
     if (o->isGeneric()) {
       middle('<' << o->typeParams << '>');
@@ -506,9 +556,8 @@ void bi::bi_ostream::visit(const ExpressionStatement* o) {
 void bi::bi_ostream::visit(const If* o) {
   start("if " << o->cond << o->braces);
   if (!o->falseBraces->isEmpty()) {
-    middle(" else" << o->falseBraces);
+    middle(" else " << o->falseBraces);
   }
-  finish("");
 }
 
 void bi::bi_ostream::visit(const For* o) {
@@ -537,7 +586,7 @@ void bi::bi_ostream::visit(const Yield* o) {
 }
 
 void bi::bi_ostream::visit(const Raw* o) {
-  line(o->name << " {{");
+  line(o->name << "{{");
   start(o->raw);
   finish("}}");
 }
@@ -550,6 +599,9 @@ void bi::bi_ostream::visit(const ClassType* o) {
   middle(o->name);
   if (!o->typeArgs->isEmpty()) {
     middle('<' << o->typeArgs << '>');
+  }
+  if (o->weak) {
+    middle('&');
   }
 }
 
@@ -601,10 +653,6 @@ void bi::bi_ostream::visit(const FiberType* o) {
 
 void bi::bi_ostream::visit(const OptionalType* o) {
   middle(o->single << '?');
-}
-
-void bi::bi_ostream::visit(const WeakType* o) {
-  middle(o->single << '&');
 }
 
 void bi::bi_ostream::visit(const UnknownType* o) {

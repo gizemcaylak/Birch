@@ -42,7 +42,8 @@ public:
 
   virtual bool isOverloaded() const;
 
-  virtual FunctionType* resolve(Argumented* o);
+  virtual Lookup lookup(Expression* args);
+  virtual ObjectType* resolve(Call<ObjectType>* o);
 
   virtual Expression* accept(Cloner* visitor) const;
   virtual Expression* accept(Modifier* visitor);
@@ -52,5 +53,10 @@ public:
    * Inherited objects that may be an alternative to target.
    */
   std::list<Overloaded<ObjectType>*> inherited;
+
+  /**
+   * The chosen overload, after calling resolve().
+   */
+  ObjectType* overload;
 };
 }

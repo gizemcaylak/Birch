@@ -11,7 +11,8 @@ bi::OverloadedIdentifier<ObjectType>::OverloadedIdentifier(Name* name,
     Expression(loc),
     Named(name),
     TypeArgumented(typeArgs),
-    Reference<Overloaded<ObjectType>>(target) {
+    Reference<Overloaded<ObjectType>>(target),
+    overload(nullptr) {
   //
 }
 
@@ -26,7 +27,13 @@ bool bi::OverloadedIdentifier<ObjectType>::isOverloaded() const {
 }
 
 template<class ObjectType>
-bi::FunctionType* bi::OverloadedIdentifier<ObjectType>::resolve(Argumented* o) {
+bi::Lookup bi::OverloadedIdentifier<ObjectType>::lookup(Expression* args) {
+  return lookup_result<ObjectType>::value;
+}
+
+template<class ObjectType>
+ObjectType* bi::OverloadedIdentifier<ObjectType>::resolve(
+    Call<ObjectType>* o) {
   std::set<ObjectType*> matches;
   this->target->overloads.match(o, matches);
 
@@ -50,8 +57,8 @@ bi::FunctionType* bi::OverloadedIdentifier<ObjectType>::resolve(Argumented* o) {
   if (matches.size() > 1) {
     throw AmbiguousCallException(o, matches);
   } else if (matches.size() == 1) {
-    auto only = *matches.begin();
-    return new FunctionType(only->params->type, only->returnType);
+    overload = *matches.begin();
+    return overload;
   } else {
     /* check inherited */
     auto iter = this->inherited.begin();
@@ -61,8 +68,8 @@ bi::FunctionType* bi::OverloadedIdentifier<ObjectType>::resolve(Argumented* o) {
       if (matches.size() > 1) {
         throw AmbiguousCallException(o, matches);
       } else if (matches.size() == 1) {
-        auto only = *matches.begin();
-        return new FunctionType(only->params->type, only->returnType);
+        overload = *matches.begin();
+        return overload;
       }
       ++iter;
     }

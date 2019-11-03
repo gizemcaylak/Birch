@@ -33,9 +33,17 @@ public:
   virtual Expression* modify(Sequence* o);
   virtual Expression* modify(Binary* o);
   virtual Expression* modify(Cast* o);
-  virtual Expression* modify(Call* o);
-  virtual Expression* modify(BinaryCall* o);
-  virtual Expression* modify(UnaryCall* o);
+  virtual Expression* modify(Call<Unknown>* o);
+  virtual Expression* modify(Call<Function>* o);
+  virtual Expression* modify(Call<MemberFunction>* o);
+  virtual Expression* modify(Call<Fiber>* o);
+  virtual Expression* modify(Call<MemberFiber>* o);
+  virtual Expression* modify(Call<Parameter>* o);
+  virtual Expression* modify(Call<LocalVariable>* o);
+  virtual Expression* modify(Call<MemberVariable>* o);
+  virtual Expression* modify(Call<GlobalVariable>* o);
+  virtual Expression* modify(Call<BinaryOperator>* o);
+  virtual Expression* modify(Call<UnaryOperator>* o);
   virtual Expression* modify(Assign* o);
   virtual Expression* modify(Slice* o);
   virtual Expression* modify(Query* o);
@@ -107,7 +115,6 @@ public:
   virtual Type* modify(FunctionType* o);
   virtual Type* modify(FiberType* o);
   virtual Type* modify(OptionalType* o);
-  virtual Type* modify(WeakType* o);
   virtual Type* modify(NilType* o);
 };
 }
